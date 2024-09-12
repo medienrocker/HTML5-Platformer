@@ -14,9 +14,12 @@ window.addEventListener('DOMContentLoaded', (event) => {
     let newPlatformHeight = 4;
 
     // Anim vars
-    let animationTime = 0;
-    const animationSpeed = 0.03;
-    const animationAmplitude = 2.5;
+    let pickupAnimationTime = 0;
+    let playerAnimationTime = 0;
+    const pickupAnimationSpeed = 0.03;
+    const pickupAnimationAmplitude = 2.5;
+    const playerBreathSpeed = 0.02;
+    const playerBreathAmplitude = 0.8;
 
     const gravity = 0.5;
     let score = 0;
@@ -27,11 +30,12 @@ window.addEventListener('DOMContentLoaded', (event) => {
         height: 32,
         dx: 0,
         dy: 0,
-        speed: 2.5,
+        speed: 5,
         jumpStrength: 12,
         jumping: false,
         grounded: false,
         image: new Image(),
+        breathOffset: 0,
     };
 
     const platforms = [
@@ -50,32 +54,43 @@ window.addEventListener('DOMContentLoaded', (event) => {
     ];
 
     const pickups = [
-        { x: 15, y: 390, width: 15, height: 15, collected: false, image: new Image() },
-        { x: 350, y: 50, width: 15, height: 15, collected: false, image: new Image() },
-        { x: 50, y: 180, width: 15, height: 15, collected: false, image: new Image() },
-        { x: 250, y: 180, width: 15, height: 15, collected: false, image: new Image() },
-        { x: 250, y: 160, width: 15, height: 15, collected: false, image: new Image() }
+        { x: 15, y: 390, width: 15, height: 15, collected: false, image: new Image(), offsetY: 0 },
+        { x: 350, y: 50, width: 15, height: 15, collected: false, image: new Image(), offsetY: 0 },
+        { x: 50, y: 180, width: 15, height: 15, collected: false, image: new Image(), offsetY: 0 },
+        { x: 250, y: 180, width: 15, height: 15, collected: false, image: new Image(), offsetY: 0 },
+        { x: 250, y: 160, width: 15, height: 15, collected: false, image: new Image(), offsetY: 0 }
     ];
 
     player.image.src = 'character1.png';
     pickups.forEach(pickup => pickup.image.src = 'pickup1.png');
 
+    function updatePlayerAnimation() {
+        playerAnimationTime += playerBreathSpeed;
+        player.breathOffset = Math.sin(playerAnimationTime) * playerBreathAmplitude;
+    }
+
     function drawPlayer() {
-        ctx.drawImage(player.image, player.x, player.y, player.width, player.height);
+        ctx.drawImage(
+            player.image,
+            player.x,
+            player.y - player.breathOffset, // Subtract to move up
+            player.width,
+            player.height + player.breathOffset * 2 // Increase height slightly
+        );
     }
 
     function drawPlatforms() {
-        ctx.fillStyle = '#f7fe89'; // '#f7fe89'; // A light green color for platforms
+        ctx.fillStyle = '#f7fe89'; // A light green color for platforms
         platforms.forEach(platform => {
             ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
         });
     }
 
     function updatePickups() {
-        animationTime += animationSpeed;
+        pickupAnimationTime += pickupAnimationSpeed;
         pickups.forEach(pickup => {
             if (!pickup.collected) {
-                pickup.offsetY = Math.sin(animationTime) * animationAmplitude;
+                pickup.offsetY = Math.sin(pickupAnimationTime) * pickupAnimationAmplitude;
             }
         });
     }
@@ -141,6 +156,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
         player.x = Math.max(0, Math.min(player.x, canvas.width - player.width));
         player.y = Math.min(player.y, canvas.height - player.height);
 
+        updatePlayerAnimation();
         updatePickups();
 
         // Clear and redraw
@@ -159,15 +175,12 @@ window.addEventListener('DOMContentLoaded', (event) => {
         ctx.fillText(`Placing Platform: ${isPlacingPlatform}`, 4, 100);
     }
 
-    //  handle mouse movement
     function updateMousePosition(e) {
         const rect = canvas.getBoundingClientRect();
         mouseX = Math.round(e.clientX - rect.left);
         mouseY = Math.round(e.clientY - rect.top);
     }
 
-
-    // Press P to enter / exit plattform creation mode [use console of developer Tool in browser]
     function togglePlatformPlacement() {
         isPlacingPlatform = !isPlacingPlatform;
     }
