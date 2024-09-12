@@ -12,6 +12,8 @@ window.addEventListener('DOMContentLoaded', (event) => {
     let isPlacingPlatform = false;
     let newPlatformWidth = 100;
     let newPlatformHeight = 4;
+    const pickupSound = new Audio('pickup_sound.wav');
+    pickupSound.volume = 0.3;
 
     // Anim vars
     let pickupAnimationTime = 0;
@@ -35,7 +37,10 @@ window.addEventListener('DOMContentLoaded', (event) => {
         jumping: false,
         grounded: false,
         image: new Image(),
+        blinkImage: new Image(),
         breathOffset: 0,
+        blinkTimer: 0,
+        blinking: false,
     };
 
     const platforms = [
@@ -61,17 +66,34 @@ window.addEventListener('DOMContentLoaded', (event) => {
         { x: 250, y: 160, width: 15, height: 15, collected: false, image: new Image(), offsetY: 0 }
     ];
 
+    // Reference to the used images (Player & pickups)
     player.image.src = 'character1.png';
+    player.blinkImage.src = 'character1_blink.png';
     pickups.forEach(pickup => pickup.image.src = 'pickup1.png');
 
+
+    // Make Player breath and blink
     function updatePlayerAnimation() {
+        // Breathing
         playerAnimationTime += playerBreathSpeed;
         player.breathOffset = Math.sin(playerAnimationTime) * playerBreathAmplitude;
+
+        // Blinking
+        if (player.blinking) {
+            player.blinkTimer--;
+            if (player.blinkTimer <= 0) {
+                player.blinking = false;
+            }
+        } else if (Math.random() < 0.002) { // 0.1% chance each frame
+            player.blinking = true;
+            player.blinkTimer = 20; // Blink for 5 frames
+        }
     }
 
     function drawPlayer() {
+        const currentImage = player.blinking ? player.blinkImage : player.image;
         ctx.drawImage(
-            player.image,
+            currentImage,
             player.x,
             player.y - player.breathOffset, // Subtract to move up
             player.width,
@@ -107,6 +129,13 @@ window.addEventListener('DOMContentLoaded', (event) => {
         document.getElementById('score').textContent = 'Score: ' + score;
     }
 
+    // play SOund on pickup
+    function playPickupSound() {
+        pickupSound.currentTime = 0; // Reset the audio to the start
+        pickupSound.play().catch(error => console.error("Error playing sound:", error));
+    }
+
+    // MAIN UPDATE FUNCTION
     function update() {
         player.dy += gravity;
 
@@ -149,6 +178,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
                 pickup.collected = true;
                 score += 10;
                 updateScore();
+                playPickupSound(); // Play sound when pickup is collected
             }
         });
 
