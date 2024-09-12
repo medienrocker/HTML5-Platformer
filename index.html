@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML5 Platformer Game</title>
+    <style>
+        #gameCanvas {
+            display: block;
+            margin: 0 auto;
+            background: url('Platformer-Background.png') no-repeat center center;
+            background-size: cover;
+            border: 2px solid black;
+            width: 512px;
+            height: 512px;
+        }
+
+        #score {
+            text-align: center;
+            font-size: 24px;
+            font-family: Arial, sans-serif;
+            margin: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="score">Score: 0</div>
+    <canvas id="gameCanvas" width="512" height="512"></canvas>
+
+    <script src="game.js"></script>
+</body>
+
+</html>
