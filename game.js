@@ -71,6 +71,57 @@ window.addEventListener('DOMContentLoaded', (event) => {
     player.blinkImage.src = 'character1_blink.png';
     pickups.forEach(pickup => pickup.image.src = 'pickup1.png');
 
+    // Particle system
+    class Particle {
+        constructor(x, y) {
+            this.x = x;
+            this.y = y;
+            this.size = Math.random() * 5 + 3;
+            this.speedX = Math.random() * 3 - 1.5;
+            this.speedY = Math.random() * 3 - 1.5;
+            //this.color = `hsl(${Math.random() * 60 + 180}, 100%, 50%)`; // blueish particles
+            //this.color = `hsl(${Math.random() * 60 + 90}, 100%, 50%)`; // greenish particles
+            this.color = `hsl(${Math.random() * 60 + 0}, 100%, 50%)`; // redish particles
+            this.life = 30;
+        }
+
+        update() {
+            this.x += this.speedX;
+            this.y += this.speedY;
+            this.size *= 0.95;
+            this.life--;
+        }
+
+        draw(ctx) {
+            ctx.fillStyle = this.color;
+            ctx.globalAlpha = this.life / 30;
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.globalAlpha = 1;
+        }
+    }
+
+    let particles = [];
+
+    function createParticles(x, y) {
+        for (let i = 0; i < 20; i++) {
+            particles.push(new Particle(x, y));
+        }
+    }
+
+    function updateParticles() {
+        for (let i = particles.length - 1; i >= 0; i--) {
+            particles[i].update();
+            if (particles[i].life <= 0) {
+                particles.splice(i, 1);
+            }
+        }
+    }
+
+    function drawParticles() {
+        particles.forEach(particle => particle.draw(ctx));
+    }
 
     // Make Player breath and blink
     function updatePlayerAnimation() {
@@ -84,9 +135,9 @@ window.addEventListener('DOMContentLoaded', (event) => {
             if (player.blinkTimer <= 0) {
                 player.blinking = false;
             }
-        } else if (Math.random() < 0.002) { // 0.1% chance each frame
+        } else if (Math.random() < 0.002) { // 0.2% chance each frame
             player.blinking = true;
-            player.blinkTimer = 20; // Blink for 5 frames
+            player.blinkTimer = 20; // Blink for 20 frames
         }
     }
 
@@ -129,7 +180,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
         document.getElementById('score').textContent = 'Score: ' + score;
     }
 
-    // play SOund on pickup
+    // play Sound on pickup
     function playPickupSound() {
         pickupSound.currentTime = 0; // Reset the audio to the start
         pickupSound.play().catch(error => console.error("Error playing sound:", error));
@@ -179,6 +230,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
                 score += 10;
                 updateScore();
                 playPickupSound(); // Play sound when pickup is collected
+                createParticles(pickup.x + pickup.width / 2, pickup.y + pickup.height / 2);
             }
         });
 
@@ -188,12 +240,14 @@ window.addEventListener('DOMContentLoaded', (event) => {
 
         updatePlayerAnimation();
         updatePickups();
+        updateParticles();
 
         // Clear and redraw
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         drawPlatforms();
         drawPickups();
         drawPlayer();
+        drawParticles();
 
         // Draw debug info
         ctx.fillStyle = 'black';
