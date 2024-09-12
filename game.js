@@ -6,12 +6,17 @@ window.addEventListener('DOMContentLoaded', (event) => {
     canvas.width = 512;
     canvas.height = 512;
 
-    //Init mouse Pos
+    //Init variables
     let mouseX = 0;
     let mouseY = 0;
     let isPlacingPlatform = false;
     let newPlatformWidth = 100;
     let newPlatformHeight = 4;
+
+    // Anim vars
+    let animationTime = 0;
+    const animationSpeed = 0.03;
+    const animationAmplitude = 2.5;
 
     const gravity = 0.5;
     let score = 0;
@@ -45,8 +50,8 @@ window.addEventListener('DOMContentLoaded', (event) => {
     ];
 
     const pickups = [
-        { x: 150, y: 380, width: 15, height: 15, collected: false, image: new Image() },
-        { x: 350, y: 280, width: 15, height: 15, collected: false, image: new Image() },
+        { x: 15, y: 390, width: 15, height: 15, collected: false, image: new Image() },
+        { x: 350, y: 50, width: 15, height: 15, collected: false, image: new Image() },
         { x: 50, y: 180, width: 15, height: 15, collected: false, image: new Image() },
         { x: 250, y: 180, width: 15, height: 15, collected: false, image: new Image() },
         { x: 250, y: 160, width: 15, height: 15, collected: false, image: new Image() }
@@ -66,10 +71,19 @@ window.addEventListener('DOMContentLoaded', (event) => {
         });
     }
 
+    function updatePickups() {
+        animationTime += animationSpeed;
+        pickups.forEach(pickup => {
+            if (!pickup.collected) {
+                pickup.offsetY = Math.sin(animationTime) * animationAmplitude;
+            }
+        });
+    }
+
     function drawPickups() {
         pickups.forEach(pickup => {
             if (!pickup.collected) {
-                ctx.drawImage(pickup.image, pickup.x, pickup.y, pickup.width, pickup.height);
+                ctx.drawImage(pickup.image, pickup.x, pickup.y + pickup.offsetY, pickup.width, pickup.height);
             }
         });
     }
@@ -126,6 +140,8 @@ window.addEventListener('DOMContentLoaded', (event) => {
         // Boundary checking
         player.x = Math.max(0, Math.min(player.x, canvas.width - player.width));
         player.y = Math.min(player.y, canvas.height - player.height);
+
+        updatePickups();
 
         // Clear and redraw
         ctx.clearRect(0, 0, canvas.width, canvas.height);
