@@ -12,8 +12,18 @@ window.addEventListener('DOMContentLoaded', (event) => {
     let isPlacingPlatform = false;
     let newPlatformWidth = 100;
     let newPlatformHeight = 4;
+    let lastLandingTime = 0;  // Initialize the last landing sound play time
+    let wasGrounded = false;  // Track if the player was grounded in the previous frame
     const pickupSound = new Audio('pickup_sound.wav');
     pickupSound.volume = 0.3;
+
+    // Audio for jump and landing
+    const jumpSound = new Audio('jump_sound2.wav');
+    const landingSound = new Audio('landing_sound.wav');
+
+    // Set volumes
+    jumpSound.volume = 0.15;
+    landingSound.volume = 0.3;
 
     // Anim vars
     let pickupAnimationTime = 0;
@@ -32,7 +42,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
         height: 32,
         dx: 0,
         dy: 0,
-        speed: 5,
+        speed: 2,
         jumpStrength: 12,
         jumping: false,
         grounded: false,
@@ -95,7 +105,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
             this.speedX = Math.random() * 3 - 1.5;
             this.speedY = Math.random() * 3 - 1.5;
             this.color = `hsl(${Math.random() * 60 + 0}, 100%, 50%)`; // reddish particles
-            this.life = 30;
+            this.life = 40;
         }
 
         update() {
@@ -218,12 +228,11 @@ window.addEventListener('DOMContentLoaded', (event) => {
     // MAIN UPDATE FUNCTION
     function update() {
         player.dy += gravity;
-
         player.x += player.dx;
         player.y += player.dy;
 
         // Reset grounded state
-        player.grounded = false;
+        let groundedOnThisFrame = false;  // Make sure this variable is reset at the start of every frame
 
         // Move platforms
         updatePlatforms();
@@ -234,6 +243,9 @@ window.addEventListener('DOMContentLoaded', (event) => {
                 player.y + player.height < platform.y + platform.height + player.dy &&
                 player.x + player.width > platform.x &&
                 player.x < platform.x + platform.width) {
+
+                groundedOnThisFrame = true;  // Set this to true when the player is grounded
+
                 player.grounded = true;
                 player.y = platform.y - player.height;
                 player.dy = 0;
@@ -245,8 +257,18 @@ window.addEventListener('DOMContentLoaded', (event) => {
             }
         });
 
+        // Play landing sound if player transitions from air to grounded
+        if (!wasGrounded && groundedOnThisFrame) {
+            playLandingSound();  // Play the landing sound only once
+            createParticles(player.x + player.width / 2, player.y + player.height / 2);
+        }
+
+        // Set wasGrounded for the next frame
+        wasGrounded = groundedOnThisFrame;
+
         // Check if player is at the bottom of the canvas
         if (player.y + player.height >= canvas.height) {
+            groundedOnThisFrame = true;  // This also needs to set groundedOnThisFrame to true
             player.grounded = true;
             player.y = canvas.height - player.height;
             player.dy = 0;
@@ -267,7 +289,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
                 score += 10;
                 updateScore();
                 playPickupSound();
-                createParticles(pickup.x + pickup.width / 2, pickup.y + pickup.height / 2);
+                //createParticles(pickup.x + pickup.width / 2, pickup.y - pickup.height);
             }
         });
 
@@ -287,13 +309,17 @@ window.addEventListener('DOMContentLoaded', (event) => {
         drawParticles();
 
         // Draw debug info
-        // ctx.fillStyle = 'black';
-        // ctx.font = '14px Arial';
-        // ctx.fillText(`Grounded: ${player.grounded}`, 10, 20);
-        // ctx.fillText(`Jumping: ${player.jumping}`, 10, 40);
-        // ctx.fillText(`Y Velocity: ${player.dy.toFixed(2)}`, 10, 60);
-        // ctx.fillText(`Mouse: (${mouseX}, ${mouseY})`, 10, 80);
-        // ctx.fillText(`Placing Platform: ${isPlacingPlatform}`, 4, 100);
+        //drawDebugInfoOnCanvas()
+    }
+
+    function drawDebugInfoOnCanvas() {
+        ctx.fillStyle = 'black';
+        ctx.font = '14px Arial';
+        ctx.fillText(`Grounded: ${player.grounded}`, 10, 20);
+        ctx.fillText(`Jumping: ${player.jumping}`, 10, 40);
+        ctx.fillText(`Y Velocity: ${player.dy.toFixed(2)}`, 10, 60);
+        ctx.fillText(`Mouse: (${mouseX}, ${mouseY})`, 10, 80);
+        ctx.fillText(`Placing Platform: ${isPlacingPlatform}`, 4, 100);
     }
 
     function updateMousePosition(e) {
@@ -340,8 +366,22 @@ window.addEventListener('DOMContentLoaded', (event) => {
             player.dy = -player.jumpStrength;
             player.jumping = true;
             player.grounded = false;
+            jumpSound.currentTime = 0; // Reset the sound
+            jumpSound.play();
         }
     }
+
+    function playLandingSound() {
+        const currentTime = performance.now();  // Get the current time
+
+        // Check if 200ms (0.2 seconds) have passed since the last landing sound
+        if (currentTime - lastLandingTime >= 300) {
+            landingSound.currentTime = 0;  // Reset the sound
+            landingSound.play();
+            lastLandingTime = currentTime;  // Update the last landing time
+        }
+    }
+
 
     function keyDownHandler(e) {
         switch (e.key) {
