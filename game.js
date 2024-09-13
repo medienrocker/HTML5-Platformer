@@ -23,8 +23,22 @@ window.addEventListener('DOMContentLoaded', (event) => {
     const playerBreathSpeed = 0.02;
     const playerBreathAmplitude = 0.8;
 
+    // Coyote time and jump force variables / const
+    const COYOTE_TIME = 100; // milliseconds
+    const MIN_JUMP_STRENGTH = 6;
+    const MAX_JUMP_STRENGTH = 12;
+    let lastGroundedTime = 0;
+    let jumpButtonHeld = false;
+
+    // Debug variables
+    let debugLastGroundedState = false;
+    let debugGroundedStateChangeCount = 0;
+    let debugLastUpdateTime = 0;
+
     const gravity = 0.5;
     let score = 0;
+
+    // Player object with properties and images
     const player = {
         x: 50,
         y: 400,
@@ -43,6 +57,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
         blinking: false,
     };
 
+    // Platforms array
     const platforms = [
         { x: 0, y: canvas.height - 14, width: canvas.width, height: 4 }, // Bottom platform
         { x: 115, y: 464, width: 123, height: 4 },
@@ -56,8 +71,24 @@ window.addEventListener('DOMContentLoaded', (event) => {
         { x: 225, y: 200, width: 70, height: 8 },
         { x: 274, y: 74, width: 100, height: 4 },
         { x: 85, y: 122, width: 100, height: 4 },
+        // Moving platforms below
+        {
+            x: 100, y: 300, width: 100, height: 4,
+            movementType: 'horizontal',
+            speed: 0.5,
+            leftBound: 50,
+            rightBound: 300
+        },
+        {
+            x: 400, y: 200, width: 100, height: 4,
+            movementType: 'vertical',
+            speed: 0.5,
+            upperBound: 150,
+            lowerBound: 250
+        }
     ];
 
+    // Pickups array
     const pickups = [
         { x: 15, y: 390, width: 15, height: 15, collected: false, image: new Image(), offsetY: 0 },
         { x: 350, y: 50, width: 15, height: 15, collected: false, image: new Image(), offsetY: 0 },
@@ -76,12 +107,10 @@ window.addEventListener('DOMContentLoaded', (event) => {
         constructor(x, y) {
             this.x = x;
             this.y = y;
-            this.size = Math.random() * 5 + 3;
+            this.size = Math.random() * 6 + 3;
             this.speedX = Math.random() * 3 - 1.5;
             this.speedY = Math.random() * 3 - 1.5;
-            //this.color = `hsl(${Math.random() * 60 + 180}, 100%, 50%)`; // blueish particles
-            //this.color = `hsl(${Math.random() * 60 + 90}, 100%, 50%)`; // greenish particles
-            this.color = `hsl(${Math.random() * 60 + 0}, 100%, 50%)`; // redish particles
+            this.color = `hsl(${Math.random() * 60 + 0}, 100%, 50%)`; // reddish particles
             this.life = 30;
         }
 
@@ -123,7 +152,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
         particles.forEach(particle => particle.draw(ctx));
     }
 
-    // Make Player breath and blink
+    // Player animation for breathing and blinking
     function updatePlayerAnimation() {
         // Breathing
         playerAnimationTime += playerBreathSpeed;
@@ -135,30 +164,50 @@ window.addEventListener('DOMContentLoaded', (event) => {
             if (player.blinkTimer <= 0) {
                 player.blinking = false;
             }
-        } else if (Math.random() < 0.002) { // 0.2% chance each frame
+        } else if (Math.random() < 0.002) {
             player.blinking = true;
-            player.blinkTimer = 20; // Blink for 20 frames
+            player.blinkTimer = 20;
         }
     }
 
+    // Draw the player with breath and blink animations
     function drawPlayer() {
         const currentImage = player.blinking ? player.blinkImage : player.image;
         ctx.drawImage(
             currentImage,
             player.x,
-            player.y - player.breathOffset, // Subtract to move up
+            player.y - player.breathOffset,
             player.width,
-            player.height + player.breathOffset * 2 // Increase height slightly
+            player.height + player.breathOffset * 2
         );
     }
 
+    // Platform drawing
     function drawPlatforms() {
-        ctx.fillStyle = '#f7fe89'; // A light green color for platforms
+        ctx.fillStyle = '#f7fe89';
         platforms.forEach(platform => {
             ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
         });
     }
 
+    // Platform movement update
+    function updatePlatforms() {
+        platforms.forEach(platform => {
+            if (platform.movementType === 'horizontal') {
+                platform.x += platform.speed;
+                if (platform.x <= platform.leftBound || platform.x + platform.width >= platform.rightBound) {
+                    platform.speed *= -1;
+                }
+            } else if (platform.movementType === 'vertical') {
+                platform.y += platform.speed;
+                if (platform.y <= platform.upperBound || platform.y >= platform.lowerBound) {
+                    platform.speed *= -1;
+                }
+            }
+        });
+    }
+
+    // Update and draw pickups with animation
     function updatePickups() {
         pickupAnimationTime += pickupAnimationSpeed;
         pickups.forEach(pickup => {
@@ -176,51 +225,89 @@ window.addEventListener('DOMContentLoaded', (event) => {
         });
     }
 
+    // Update the score display
     function updateScore() {
         document.getElementById('score').textContent = 'Score: ' + score;
     }
 
-    // play Sound on pickup
+    // Sound playback for pickup collection
     function playPickupSound() {
-        pickupSound.currentTime = 0; // Reset the audio to the start
+        pickupSound.currentTime = 0;
         pickupSound.play().catch(error => console.error("Error playing sound:", error));
     }
 
-    // MAIN UPDATE FUNCTION
-    function update() {
-        player.dy += gravity;
+    // Ground collision detection
+    function checkGroundCollision(player, platforms) {
+        let standingPlatform = null;
+        let minIntersection = Infinity;
+
+        platforms.forEach(platform => {
+            if (player.x + player.width > platform.x && player.x < platform.x + platform.width) {
+                const intersection = player.y + player.height - platform.y;
+                if (player.y + player.height >= platform.y && player.y + player.height <= platform.y + platform.height) {
+                    if (intersection < minIntersection) {
+                        minIntersection = intersection;
+                        standingPlatform = platform;
+                    }
+                }
+            }
+        });
+
+        if (standingPlatform) {
+            player.grounded = true;
+            player.y = standingPlatform.y - player.height;
+            player.dy = 0;
+            if (standingPlatform.movementType === 'horizontal') {
+                player.x += standingPlatform.speed;
+            }
+        } else {
+            player.grounded = false;
+        }
+    }
+
+    // Handle player jump, with coyote time
+    function canJump(timestamp) {
+        return player.grounded || (timestamp - lastGroundedTime <= COYOTE_TIME);
+    }
+
+    function jump(timestamp) {
+        if (canJump(timestamp)) {
+            player.dy = -MAX_JUMP_STRENGTH;
+            player.jumping = true;
+            player.grounded = false;
+            lastGroundedTime = 0; // Reset the coyote time
+        }
+    }
+
+    // Main update function
+    function update(timestamp) {
+        const deltaTime = timestamp - debugLastUpdateTime;
+        debugLastUpdateTime = timestamp;
+
+        if (player.grounded) {
+            lastGroundedTime = timestamp;
+        }
+
+        updatePlatforms();
+        checkGroundCollision(player, platforms);
+
+        if (!player.grounded) {
+            player.dy += gravity;
+        }
 
         player.x += player.dx;
         player.y += player.dy;
 
-        // Reset grounded state
-        player.grounded = false;
-
-        // Check collision with platforms
-        platforms.forEach(platform => {
-            if (player.y + player.height > platform.y &&
-                player.y + player.height < platform.y + platform.height + player.dy &&
-                player.x + player.width > platform.x &&
-                player.x < platform.x + platform.width) {
-                player.grounded = true;
-                player.y = platform.y - player.height;
-                player.dy = 0;
-            }
-        });
-
-        // Check if player is at the bottom of the canvas
-        if (player.y + player.height >= canvas.height) {
+        if (player.y + player.height > canvas.height) {
             player.grounded = true;
             player.y = canvas.height - player.height;
             player.dy = 0;
         }
 
-        // Reset jumping state when grounded
-        if (player.grounded) {
-            player.jumping = false;
+        if (player.jumping && !jumpButtonHeld && player.dy < -MIN_JUMP_STRENGTH) {
+            player.dy = -MIN_JUMP_STRENGTH;
         }
 
-        // Handle pickup collection
         pickups.forEach(pickup => {
             if (!pickup.collected && player.y + player.height > pickup.y &&
                 player.y < pickup.y + pickup.height &&
@@ -229,36 +316,41 @@ window.addEventListener('DOMContentLoaded', (event) => {
                 pickup.collected = true;
                 score += 10;
                 updateScore();
-                playPickupSound(); // Play sound when pickup is collected
+                playPickupSound();
                 createParticles(pickup.x + pickup.width / 2, pickup.y + pickup.height / 2);
             }
         });
 
-        // Boundary checking
         player.x = Math.max(0, Math.min(player.x, canvas.width - player.width));
-        player.y = Math.min(player.y, canvas.height - player.height);
+        player.y = Math.max(0, Math.min(player.y, canvas.height - player.height));
+
+        if (player.grounded !== debugLastGroundedState) {
+            debugGroundedStateChangeCount++;
+            debugLastGroundedState = player.grounded;
+        }
 
         updatePlayerAnimation();
         updatePickups();
         updateParticles();
 
-        // Clear and redraw
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         drawPlatforms();
         drawPickups();
         drawPlayer();
         drawParticles();
 
-        // Draw debug info
         ctx.fillStyle = 'black';
         ctx.font = '14px Arial';
         ctx.fillText(`Grounded: ${player.grounded}`, 10, 20);
         ctx.fillText(`Jumping: ${player.jumping}`, 10, 40);
         ctx.fillText(`Y Velocity: ${player.dy.toFixed(2)}`, 10, 60);
         ctx.fillText(`Mouse: (${mouseX}, ${mouseY})`, 10, 80);
-        ctx.fillText(`Placing Platform: ${isPlacingPlatform}`, 4, 100);
+        ctx.fillText(`Placing Platform: ${isPlacingPlatform}`, 10, 100);
+        ctx.fillText(`Grounded State Changes: ${debugGroundedStateChangeCount}`, 10, 120);
+        ctx.fillText(`Delta Time: ${deltaTime.toFixed(2)}`, 10, 140);
     }
 
+    // Mouse and platform placement logic
     function updateMousePosition(e) {
         const rect = canvas.getBoundingClientRect();
         mouseX = Math.round(e.clientX - rect.left);
@@ -272,13 +364,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
     function addPlatform(x, y) {
         const newPlatform = { x, y, width: newPlatformWidth, height: newPlatformHeight };
         platforms.push(newPlatform);
-        console.log(`New platform added: { x: ${x}, y: ${y}, width: ${newPlatformWidth}, height: ${newPlatformHeight} },`);
-        console.log('Updated platforms array:');
-        console.log('const platforms = [');
-        platforms.forEach(platform => {
-            console.log(`    { x: ${platform.x}, y: ${platform.y}, width: ${platform.width}, height: ${platform.height} },`);
-        });
-        console.log('];');
+        console.log(`New platform added at (${x}, ${y})`);
     }
 
     function handleCanvasClick(e) {
@@ -287,15 +373,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
         }
     }
 
-    // Add event listeners
-    canvas.addEventListener('mousemove', updateMousePosition);
-    canvas.addEventListener('click', handleCanvasClick);
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'p' || e.key === 'P') {
-            togglePlatformPlacement();
-        }
-    });
-
+    // Movement controls
     function moveLeft() {
         player.dx = -player.speed;
     }
@@ -304,14 +382,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
         player.dx = player.speed;
     }
 
-    function jump() {
-        if (player.grounded && !player.jumping) {
-            player.dy = -player.jumpStrength;
-            player.jumping = true;
-            player.grounded = false;
-        }
-    }
-
+    // Event handlers
     function keyDownHandler(e) {
         switch (e.key) {
             case 'ArrowLeft':
@@ -322,7 +393,8 @@ window.addEventListener('DOMContentLoaded', (event) => {
                 break;
             case 'ArrowUp':
             case ' ':
-                jump();
+                jump(performance.now());
+                jumpButtonHeld = true;
                 break;
         }
     }
@@ -331,16 +403,21 @@ window.addEventListener('DOMContentLoaded', (event) => {
         if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
             player.dx = 0;
         }
+        if (e.key === 'ArrowUp' || e.key === ' ') {
+            jumpButtonHeld = false;
+        }
     }
 
+    canvas.addEventListener('mousemove', updateMousePosition);
+    canvas.addEventListener('click', handleCanvasClick);
     document.addEventListener('keydown', keyDownHandler);
     document.addEventListener('keyup', keyUpHandler);
 
-    function gameLoop() {
-        update();
+    function gameLoop(timestamp) {
+        update(timestamp);
         requestAnimationFrame(gameLoop);
     }
 
     updateScore();
-    gameLoop();
+    requestAnimationFrame(gameLoop);
 });
