@@ -9,7 +9,7 @@
         #gameCanvas {
             display: block;
             margin: 0 auto;
-            background: url('Platformer-Background.png') no-repeat center center;
+            background: url('./images/Platformer-Background.png') no-repeat center center;
             background-size: cover;
             border: 2px solid black;
             width: 512px;
@@ -29,7 +29,8 @@
     <div id="score">Score: 0</div>
     <canvas id="gameCanvas" width="512" height="512"></canvas>
 
-    <script src="game.js"></script>
+    <!-- Include the main game script as a module -->
+    <script src="gamePrototype.js"></script>
 </body>
 
 </html>

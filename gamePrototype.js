@@ -1,6 +1,8 @@
 window.addEventListener('DOMContentLoaded', (event) => {
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
+    console.log('Canvas:', canvas);
+    console.log('Context:', ctx);
 
     // Ensure canvas size matches HTML
     canvas.width = 512;
@@ -13,18 +15,17 @@ window.addEventListener('DOMContentLoaded', (event) => {
     let newPlatformWidth = 100;
     let newPlatformHeight = 4;
     let lastLandingTime = 0;  // Initialize the last landing sound play time
-    let landedOnPlatform = false;
     let wasGrounded = false;  // Track if the player was grounded in the previous frame
     
     // Audio for jump and landing
-    const jumpSound = new Audio('jump_sound2.wav');
-    const landingSound = new Audio('landing_sound.wav');
-    const pickupSound = new Audio('pickup_sound.wav');
+    const jumpSound = new Audio('./audio/jump_sound2.wav');
+    const landingSound = new Audio('./audio/landing_sound.wav');
+    const pickupSound = new Audio('./audio/pickup_sound.wav');
     
     // Set volumes
     jumpSound.volume = 0.15;
     landingSound.volume = 0.3;
-    pickupSound.volume = 0.2;
+    pickupSound.volume = 0.3;
 
     // Anim vars
     let pickupAnimationTime = 0;
@@ -55,65 +56,87 @@ window.addEventListener('DOMContentLoaded', (event) => {
     };
 
     const platforms = [
-        { x: 0, y: canvas.height - 14, width: canvas.width, height: 4, type: 'static' }, // Static bottom platform
-        { x: 115, y: 464, width: 123, height: 4, type: 'static' },
-        { x: 294, y: 464, width: 217, height: 4, type: 'static' },
-        { x: 319, y: 428, width: 192, height: 4, type: 'static' },
-        { x: 0, y: 428, width: 184, height: 4, type: 'static' },
-        { x: 0, y: 365, width: 184, height: 4, type: 'static' },
-        { x: 400, y: 366, width: 112, height: 4, type: 'static' },
-        { x: 425, y: 326, width: 87, height: 4, type: 'static' },
-        { x: 0, y: 242, width: 53, height: 4, type: 'static' },
-        { x: 225, y: 200, width: 70, height: 8, type: 'static' },
-        { x: 274, y: 74, width: 100, height: 6, type: 'static' },
-        { x: 85, y: 122, width: 100, height: 6, type: 'static' },
+        { x: 0, y: canvas.height - 14, width: canvas.width, height: 4 }, // Bottom platform
+        { x: 115, y: 464, width: 123, height: 4, movementType: 'static', tag: '' },
+        { x: 294, y: 464, width: 217, height: 4, movementType: 'static', tag: '' },
+        { x: 319, y: 428, width: 192, height: 4, movementType: 'static', tag: '' },
+        { x: 0, y: 428, width: 184, height: 4, movementType: 'static', tag: '' },
+        { x: 0, y: 365, width: 184, height: 4, movementType: 'static', tag: '' },
+        { x: 400, y: 366, width: 112, height: 4, movementType: 'static', tag: '' },
+        { x: 425, y: 326, width: 87, height: 4, movementType: 'static', tag: '' },
+        { x: 0, y: 242, width: 53, height: 4, movementType: 'static', tag: '' },
+        { x: 225, y: 200, width: 70, height: 8, movementType: 'static', tag: '' },
+        { x: 274, y: 74, width: 100, height: 6, movementType: 'static', tag: '' },
+        { x: 85, y: 122, width: 100, height: 6, movementType: 'static', tag: '' },
         // Moving platforms
         {
-            x: 100, y: 300, width: 100, height: 6, type: 'moving-horizontal',
-            movementType: 'horizontal', speed: 0.5, leftBound: 50, rightBound: 300
+            x: 100, y: 300, width: 100, height: 6,
+            movementType: 'horizontal', tag: 'special',
+            speed: 0.5,
+            leftBound: 50,
+            rightBound: 300
         },
         {
-            x: 400, y: 200, width: 100, height: 6, type: 'special',
-            movementType: 'vertical', speed: 0.5, upperBound: 150, lowerBound: 250
+            x: 400, y: 200, width: 100, height: 6,
+            movementType: 'vertical', tag: 'special',
+            speed: 0.5,
+            upperBound: 150,
+            lowerBound: 250
         }
     ];
 
-
     const pickups = [
-        { x: 15, y: 390, width: 15, height: 15, collected: false, image: new Image(), offsetY: 0 },
-        { x: 350, y: 50, width: 15, height: 15, collected: false, image: new Image(), offsetY: 0 },
-        { x: 50, y: 180, width: 15, height: 15, collected: false, image: new Image(), offsetY: 0 },
-        { x: 250, y: 180, width: 15, height: 15, collected: false, image: new Image(), offsetY: 0 },
-        { x: 250, y: 160, width: 15, height: 15, collected: false, image: new Image(), offsetY: 0 }
+        { x: 15, y: 390, width: 15, height: 15, collected: false, image: new Image(), offsetY: 0, type: 'red'},
+        { x: 350, y: 50, width: 15, height: 15, collected: false, image: new Image(), offsetY: 0, type: 'red'},
+        { x: 50, y: 180, width: 15, height: 15, collected: false, image: new Image(), offsetY: 0, type: 'red'},
+        { x: 250, y: 180, width: 15, height: 15, collected: false, image: new Image(), offsetY: 0, type: 'red'},
+        { x: 250, y: 160, width: 15, height: 15, collected: false, image: new Image(), offsetY: 0, type: 'red'}
     ];
 
     // Reference to the used images (Player & pickups)
-    player.image.src = 'character1.png';
-    player.blinkImage.src = 'character1_blink.png';
-    pickups.forEach(pickup => pickup.image.src = 'pickup1.png');
+    player.image.src = './images/character1.png';
+    player.blinkImage.src = './images/character1_blink.png';
+    pickups.forEach(pickup => pickup.image.src = './images/pickup1.png');
 
     // Particle system
     class Particle {
-        constructor(x, y) {
+        constructor(x, y, type = 'normal') {
             this.x = x;
             this.y = y;
-            this.size = Math.random() * 5 + 3;
-            this.speedX = Math.random() * 3 - 1.5;
-            this.speedY = Math.random() * 3 - 1.5;
-            this.color = `hsl(${Math.random() * 60 + 0}, 100%, 50%)`; // reddish particles
-            this.life = 40;
+            this.type = type;
+
+            if (this.type === 'dust') {
+                this.size = Math.random() * 5 + 3;  // Increased size for dust
+                this.speedX = Math.random() * 6 - 3;  // Wider horizontal spread (-3 to 3)
+                this.speedY = Math.random() * 0.5 - 0.25;  // Minimal vertical movement (-0.25 to 0.25)
+                this.color = `hsl(0, 0%, ${Math.random() * 20 + 70}%)`;  // Lighter shades of gray
+                this.life = 30 + Math.random() * 20;  // Longer life for more visible effect
+            } else {
+                this.size = Math.random() * 5 + 3;
+                this.speedX = Math.random() * 3 - 1.5;
+                this.speedY = Math.random() * 3 - 1.5;
+                this.color = `hsl(${Math.random() * 60 + 0}, 100%, 50%)`; // reddish particles
+                this.life = 40;
+            }
         }
 
         update() {
             this.x += this.speedX;
             this.y += this.speedY;
-            this.size *= 0.95;
+            if (this.type === 'dust') {
+                this.size *= 0.97;  // Slower size reduction for dust
+                this.speedX *= 0.95;  // Gradually slow down horizontal movement
+                this.speedY += 0.02;  // Very slight gravity effect
+            } else {
+                this.size *= 0.95;
+                this.life--;
+            }
             this.life--;
         }
 
         draw(ctx) {
             ctx.fillStyle = this.color;
-            ctx.globalAlpha = this.life / 30;
+            ctx.globalAlpha = this.life / (this.type === 'dust' ? 20 : 30);
             ctx.beginPath();
             ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
             ctx.fill();
@@ -123,9 +146,22 @@ window.addEventListener('DOMContentLoaded', (event) => {
 
     let particles = [];
 
-    function createParticles(x, y) {
-        for (let i = 0; i < 20; i++) {
-            particles.push(new Particle(x, y));
+    function createParticles(x, y, type = 'normal') {
+        const count = type === 'dust' ? 10 : 20;
+        for (let i = 0; i < count; i++) {
+            particles.push(new Particle(x, y, type));
+        }
+    }
+
+    // little gray dust particles if Player lands on platform
+    function createDustParticles(x, y) {
+        const particleCount = 10;  // Increase number of particles
+        const spreadX = 10;  // Horizontal spread
+
+        for (let i = 0; i < particleCount; i++) {
+            const offsetX = Math.random() * spreadX - spreadX / 2;
+            const particleX = x + offsetX;
+            particles.push(new Particle(particleX, y, 'dust'));
         }
     }
 
@@ -172,61 +208,27 @@ window.addEventListener('DOMContentLoaded', (event) => {
     }
 
     function drawPlatforms() {
+        ctx.fillStyle = '#f7fe89'; // A light green color for platforms
         platforms.forEach(platform => {
-            // Check if the platform should glow
-            if (platform.isGlowing) {
-                ctx.fillStyle = '#fa3d3d';  // Glowing red color
-                ctx.shadowColor = '#fa3d3d';
-                ctx.shadowBlur = 20;
-            } else if (platform.isSpecial) {
-                ctx.fillStyle = '#0fb0d7';  // Glowing blue color
-                ctx.shadowColor = '#0fb0d7';
-                ctx.shadowBlur = 20;
-            } else {
-                ctx.fillStyle = '#f7fe89';  // Default platform color
-                ctx.shadowBlur = 0;  // Reset shadow
-            }
             ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
         });
     }
 
-
     function updatePlatforms() {
         platforms.forEach(platform => {
-            // Reset glowing state at the start of each frame
-            platform.isGlowing = false;
-            platform.isSpecial = false;
-
-            // Handle horizontal movement
             if (platform.movementType === 'horizontal') {
                 platform.x += platform.speed;
                 if (platform.x <= platform.leftBound || platform.x + platform.width >= platform.rightBound) {
                     platform.speed *= -1;
                 }
-            }
-            // Handle vertical movement
-            else if (platform.movementType === 'vertical') {
+            } else if (platform.movementType === 'vertical') {
                 platform.y += platform.speed;
                 if (platform.y <= platform.upperBound || platform.y >= platform.lowerBound) {
                     platform.speed *= -1;
                 }
             }
-
-            // Check if the player is on this platform, and set glow if so
-            if (player.y + player.height > platform.y &&
-                player.y + player.height < platform.y + platform.height + player.dy &&
-                player.x + player.width > platform.x &&
-                player.x < platform.x + platform.width) {
-
-                if (platform.type === 'special') {
-                    platform.isSpecial = true;
-                } else {
-                    platform.isGlowing = true;  // Player is on the platform, set glow
-                }
-            }
         });
     }
-
 
     function updatePickups() {
         pickupAnimationTime += pickupAnimationSpeed;
@@ -262,7 +264,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
         player.y += player.dy;
 
         // Reset grounded state
-        let groundedOnThisFrame = false;
+        let groundedOnThisFrame = false;  // Make sure this variable is reset at the start of every frame
 
         // Move platforms
         updatePlatforms();
@@ -274,36 +276,26 @@ window.addEventListener('DOMContentLoaded', (event) => {
                 player.x + player.width > platform.x &&
                 player.x < platform.x + platform.width) {
 
-                groundedOnThisFrame = true;
+                groundedOnThisFrame = true;  // Set this to true when the player is grounded
+
                 player.grounded = true;
                 player.y = platform.y - player.height;
                 player.dy = 0;
 
-                // Moving platforms
+                // Move player with horizontal platform
                 if (platform.movementType === 'horizontal') {
                     player.x += platform.speed;
-                }
-
-                // Limit particle generation for moving platforms
-                if (platform.movementType !== 'vertical' || Math.abs(platform.speed) < 0.1) {
-                    if (!wasGrounded && !landedOnPlatform) {
-                        createParticles(player.x + player.width / 2, player.y + player.height / 2);
-                        landedOnPlatform = true;
-                    }
                 }
             }
         });
 
-        // Play landing sound if player transitions from air to grounded
-        if (!wasGrounded && groundedOnThisFrame && !landedOnPlatform) {
-            playLandingSound();  // Play the landing sound only once
-            createParticles(player.x + player.width / 2, player.y + player.height / 2);
-            landedOnPlatform = true;
-        }
-
-        // Reset landing sound control when player jumps or leaves platform
-        if (!groundedOnThisFrame) {
-            landedOnPlatform = false;
+        // Play landing sound and create dust if player transitions from air to grounded
+        if (!wasGrounded && groundedOnThisFrame) {
+            playLandingSound();
+            // Create dust at the player's feet
+            const dustY = player.y + player.height;
+            createDustParticles(player.x, dustY);  // Left foot
+            createDustParticles(player.x + player.width, dustY);  // Right foot
         }
 
         // Set wasGrounded for the next frame
@@ -311,7 +303,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 
         // Check if player is at the bottom of the canvas
         if (player.y + player.height >= canvas.height) {
-            groundedOnThisFrame = true;
+            groundedOnThisFrame = true;  // This also needs to set groundedOnThisFrame to true
             player.grounded = true;
             player.y = canvas.height - player.height;
             player.dy = 0;
@@ -352,9 +344,8 @@ window.addEventListener('DOMContentLoaded', (event) => {
         drawParticles();
 
         // Draw debug info
-        // drawDebugInfoOnCanvas();
+        //drawDebugInfoOnCanvas()
     }
-
 
     function drawDebugInfoOnCanvas() {
         ctx.fillStyle = 'black';
@@ -411,16 +402,15 @@ window.addEventListener('DOMContentLoaded', (event) => {
             player.jumping = true;
             player.grounded = false;
             jumpSound.currentTime = 0; // Reset the sound
-            jumpSound.play();  // Play the jump sound
+            jumpSound.play();
         }
     }
-
 
     function playLandingSound() {
         const currentTime = performance.now();  // Get the current time
 
         // Check if 200ms (0.2 seconds) have passed since the last landing sound
-        if (currentTime - lastLandingTime >= 300) {
+        if (currentTime - lastLandingTime >= 200) {
             landingSound.currentTime = 0;  // Reset the sound
             landingSound.play();
             lastLandingTime = currentTime;  // Update the last landing time
