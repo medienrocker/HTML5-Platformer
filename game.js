@@ -13,17 +13,18 @@ window.addEventListener('DOMContentLoaded', (event) => {
     let newPlatformWidth = 100;
     let newPlatformHeight = 4;
     let lastLandingTime = 0;  // Initialize the last landing sound play time
+    let landedOnPlatform = false;
     let wasGrounded = false;  // Track if the player was grounded in the previous frame
-    const pickupSound = new Audio('pickup_sound.wav');
-    pickupSound.volume = 0.3;
-
+    
     // Audio for jump and landing
     const jumpSound = new Audio('jump_sound2.wav');
     const landingSound = new Audio('landing_sound.wav');
-
+    const pickupSound = new Audio('pickup_sound.wav');
+    
     // Set volumes
     jumpSound.volume = 0.15;
     landingSound.volume = 0.3;
+    pickupSound.volume = 0.2;
 
     // Anim vars
     let pickupAnimationTime = 0;
@@ -54,34 +55,29 @@ window.addEventListener('DOMContentLoaded', (event) => {
     };
 
     const platforms = [
-        { x: 0, y: canvas.height - 14, width: canvas.width, height: 4 }, // Bottom platform
-        { x: 115, y: 464, width: 123, height: 4 },
-        { x: 294, y: 464, width: 217, height: 4 },
-        { x: 319, y: 428, width: 192, height: 4 },
-        { x: 0, y: 428, width: 184, height: 4 },
-        { x: 0, y: 365, width: 184, height: 4 },
-        { x: 400, y: 366, width: 112, height: 4 },
-        { x: 425, y: 326, width: 87, height: 4 },
-        { x: 0, y: 242, width: 53, height: 4 },
-        { x: 225, y: 200, width: 70, height: 8 },
-        { x: 274, y: 74, width: 100, height: 4 },
-        { x: 85, y: 122, width: 100, height: 4 },
+        { x: 0, y: canvas.height - 14, width: canvas.width, height: 4, type: 'static' }, // Static bottom platform
+        { x: 115, y: 464, width: 123, height: 4, type: 'static' },
+        { x: 294, y: 464, width: 217, height: 4, type: 'static' },
+        { x: 319, y: 428, width: 192, height: 4, type: 'static' },
+        { x: 0, y: 428, width: 184, height: 4, type: 'static' },
+        { x: 0, y: 365, width: 184, height: 4, type: 'static' },
+        { x: 400, y: 366, width: 112, height: 4, type: 'static' },
+        { x: 425, y: 326, width: 87, height: 4, type: 'static' },
+        { x: 0, y: 242, width: 53, height: 4, type: 'static' },
+        { x: 225, y: 200, width: 70, height: 8, type: 'static' },
+        { x: 274, y: 74, width: 100, height: 6, type: 'static' },
+        { x: 85, y: 122, width: 100, height: 6, type: 'static' },
         // Moving platforms
         {
-            x: 100, y: 300, width: 100, height: 4,
-            movementType: 'horizontal',
-            speed: 0.5,
-            leftBound: 50,
-            rightBound: 300
+            x: 100, y: 300, width: 100, height: 6, type: 'moving-horizontal',
+            movementType: 'horizontal', speed: 0.5, leftBound: 50, rightBound: 300
         },
         {
-            x: 400, y: 200, width: 100, height: 4,
-            movementType: 'vertical',
-            speed: 0.5,
-            upperBound: 150,
-            lowerBound: 250
+            x: 400, y: 200, width: 100, height: 6, type: 'special',
+            movementType: 'vertical', speed: 0.5, upperBound: 150, lowerBound: 250
         }
     ];
+
 
     const pickups = [
         { x: 15, y: 390, width: 15, height: 15, collected: false, image: new Image(), offsetY: 0 },
@@ -176,27 +172,61 @@ window.addEventListener('DOMContentLoaded', (event) => {
     }
 
     function drawPlatforms() {
-        ctx.fillStyle = '#f7fe89'; // A light green color for platforms
         platforms.forEach(platform => {
+            // Check if the platform should glow
+            if (platform.isGlowing) {
+                ctx.fillStyle = '#fa3d3d';  // Glowing red color
+                ctx.shadowColor = '#fa3d3d';
+                ctx.shadowBlur = 20;
+            } else if (platform.isSpecial) {
+                ctx.fillStyle = '#0fb0d7';  // Glowing blue color
+                ctx.shadowColor = '#0fb0d7';
+                ctx.shadowBlur = 20;
+            } else {
+                ctx.fillStyle = '#f7fe89';  // Default platform color
+                ctx.shadowBlur = 0;  // Reset shadow
+            }
             ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
         });
     }
 
+
     function updatePlatforms() {
         platforms.forEach(platform => {
+            // Reset glowing state at the start of each frame
+            platform.isGlowing = false;
+            platform.isSpecial = false;
+
+            // Handle horizontal movement
             if (platform.movementType === 'horizontal') {
                 platform.x += platform.speed;
                 if (platform.x <= platform.leftBound || platform.x + platform.width >= platform.rightBound) {
                     platform.speed *= -1;
                 }
-            } else if (platform.movementType === 'vertical') {
+            }
+            // Handle vertical movement
+            else if (platform.movementType === 'vertical') {
                 platform.y += platform.speed;
                 if (platform.y <= platform.upperBound || platform.y >= platform.lowerBound) {
                     platform.speed *= -1;
                 }
             }
+
+            // Check if the player is on this platform, and set glow if so
+            if (player.y + player.height > platform.y &&
+                player.y + player.height < platform.y + platform.height + player.dy &&
+                player.x + player.width > platform.x &&
+                player.x < platform.x + platform.width) {
+
+                if (platform.type === 'special') {
+                    platform.isSpecial = true;
+                } else {
+                    platform.isGlowing = true;  // Player is on the platform, set glow
+                }
+            }
         });
     }
+
 
     function updatePickups() {
         pickupAnimationTime += pickupAnimationSpeed;
@@ -232,7 +262,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
         player.y += player.dy;
 
         // Reset grounded state
-        let groundedOnThisFrame = false;  // Make sure this variable is reset at the start of every frame
+        let groundedOnThisFrame = false;
 
         // Move platforms
         updatePlatforms();
@@ -244,23 +274,36 @@ window.addEventListener('DOMContentLoaded', (event) => {
                 player.x + player.width > platform.x &&
                 player.x < platform.x + platform.width) {
 
-                groundedOnThisFrame = true;  // Set this to true when the player is grounded
-
+                groundedOnThisFrame = true;
                 player.grounded = true;
                 player.y = platform.y - player.height;
                 player.dy = 0;
 
-                // Move player with horizontal platform
+                // Moving platforms
                 if (platform.movementType === 'horizontal') {
                     player.x += platform.speed;
+                }
+
+                // Limit particle generation for moving platforms
+                if (platform.movementType !== 'vertical' || Math.abs(platform.speed) < 0.1) {
+                    if (!wasGrounded && !landedOnPlatform) {
+                        createParticles(player.x + player.width / 2, player.y + player.height / 2);
+                        landedOnPlatform = true;
+                    }
                 }
             }
         });
 
         // Play landing sound if player transitions from air to grounded
-        if (!wasGrounded && groundedOnThisFrame) {
+        if (!wasGrounded && groundedOnThisFrame && !landedOnPlatform) {
             playLandingSound();  // Play the landing sound only once
             createParticles(player.x + player.width / 2, player.y + player.height / 2);
+            landedOnPlatform = true;
+        }
+
+        // Reset landing sound control when player jumps or leaves platform
+        if (!groundedOnThisFrame) {
+            landedOnPlatform = false;
         }
 
         // Set wasGrounded for the next frame
@@ -268,7 +311,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 
         // Check if player is at the bottom of the canvas
         if (player.y + player.height >= canvas.height) {
-            groundedOnThisFrame = true;  // This also needs to set groundedOnThisFrame to true
+            groundedOnThisFrame = true;
             player.grounded = true;
             player.y = canvas.height - player.height;
             player.dy = 0;
@@ -289,7 +332,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
                 score += 10;
                 updateScore();
                 playPickupSound();
-                //createParticles(pickup.x + pickup.width / 2, pickup.y - pickup.height);
+                createParticles(pickup.x + pickup.width / 2, pickup.y - pickup.height);
             }
         });
 
@@ -309,8 +352,9 @@ window.addEventListener('DOMContentLoaded', (event) => {
         drawParticles();
 
         // Draw debug info
-        //drawDebugInfoOnCanvas()
+        // drawDebugInfoOnCanvas();
     }
+
 
     function drawDebugInfoOnCanvas() {
         ctx.fillStyle = 'black';
@@ -367,9 +411,10 @@ window.addEventListener('DOMContentLoaded', (event) => {
             player.jumping = true;
             player.grounded = false;
             jumpSound.currentTime = 0; // Reset the sound
-            jumpSound.play();
+            jumpSound.play();  // Play the jump sound
         }
     }
+
 
     function playLandingSound() {
         const currentTime = performance.now();  // Get the current time
