@@ -59,6 +59,7 @@
         }
 
         #scoreContainer {
+            font-family: sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -81,6 +82,42 @@
             transform: scale(1.05);
         }
 
+        #timer {
+            font-size: 18px;
+            margin-top: 5px;
+        }
+
+        #winScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 24px;
+        }
+
+        #replayButton {
+            padding: 10px 20px;
+            font-size: 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: 2px solid white;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: all 0.3s;
+        }
+
+        #replayButton:hover {
+            background-color: #45a049;
+        }
+
 
         /* WIN SCREEN */
     </style>
@@ -89,16 +126,27 @@
 <body>
     <div id="scoreContainer">
         <div id="score">Score: 0</div>
-        <!-- Sound Toggle Button -->
+        <div id="timer">Time: 0s</div> <!-- Timer display -->
         <button id="soundToggleButton">Sound Off</button>
     </div>
+
     <div id="gameContainer">
         <canvas id="gameCanvas" width="512" height="512"></canvas>
         <div id="overlay">
             <button id="startButton">START</button>
         </div>
     </div>
+
+    <!-- Win Screen Overlay -->
+    <div id="winScreen" style="display: none;">
+        <div id="winMessage">YOU WIN</div>
+        <div id="finalScore"></div>
+        <div id="timeTaken"></div>
+        <button id="replayButton">Replay</button>
+    </div>
+
     <script src="gamePrototype.js"></script>
+
 </body>
 
 </html>

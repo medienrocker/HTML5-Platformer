@@ -4,6 +4,12 @@ window.addEventListener('DOMContentLoaded', (event) => {
     const overlay = document.getElementById('overlay');
     const startButton = document.getElementById('startButton');
     const soundToggleButton = document.getElementById('soundToggleButton');
+    const timerDisplay = document.getElementById('timer');
+    const winScreen = document.getElementById('winScreen');
+    const winMessage = document.getElementById('winMessage');
+    const finalScore = document.getElementById('finalScore');
+    const timeTaken = document.getElementById('timeTaken');
+    const replayButton = document.getElementById('replayButton');
 
     // Ensure canvas size matches HTML
     canvas.width = 512;
@@ -39,7 +45,10 @@ window.addEventListener('DOMContentLoaded', (event) => {
     // Array of all game sounds for easy mute control
     const allSounds = [jumpSound, landingSound, pickupSound];
 
-    // Sound toggle state
+    // Game state variables
+    let gameStarted = false;
+    let gameTime = 0;
+    let gameTimer;
     let soundMuted = false;
 
     // Anim vars
@@ -102,12 +111,12 @@ window.addEventListener('DOMContentLoaded', (event) => {
     ];
 
     const pickups = [
-        { x: 15, y: 390, width: 15, height: 15, collected: false, image: new Image(), offsetY: 0, type: 'red' },
-        { x: 180, y: 27, width: 30, height: 30, collected: false, image: new Image(), offsetY: 0, type: 'star' },
-        { x: 50, y: 180, width: 15, height: 15, collected: false, image: new Image(), offsetY: 0, type: 'red' },
-        { x: 250, y: 180, width: 15, height: 15, collected: false, image: new Image(), offsetY: 0, type: 'red' },
-        { x: 250, y: 160, width: 15, height: 15, collected: false, image: new Image(), offsetY: 0, type: 'red' },
-        { x: 350, y: 330, width: 15, height: 15, collected: false, image: new Image(), offsetY: 0, type: 'red' }
+        { x: 15, y: 390, width: 15, height: 15, collected: false, image: new Image(), offsetY: 0, type: 'red' , tag: ''},
+        { x: 180, y: 27, width: 30, height: 30, collected: false, image: new Image(), offsetY: 0, type: 'star' , tag: 'winTheGame'},
+        { x: 50, y: 180, width: 15, height: 15, collected: false, image: new Image(), offsetY: 0, type: 'red' , tag: ''},
+        { x: 250, y: 180, width: 15, height: 15, collected: false, image: new Image(), offsetY: 0, type: 'red' , tag: ''},
+        { x: 250, y: 160, width: 15, height: 15, collected: false, image: new Image(), offsetY: 0, type: 'red' , tag: ''},
+        { x: 350, y: 330, width: 15, height: 15, collected: false, image: new Image(), offsetY: 0, type: 'red' , tag: ''}
     ];
 
     // Reference to the used images (Player & pickups)
@@ -348,6 +357,39 @@ window.addEventListener('DOMContentLoaded', (event) => {
         soundToggleButton.textContent = soundMuted ? 'Sound On' : 'Sound Off';
     }
 
+    // Function to start the timer
+    function startTimer() {
+        gameTimer = setInterval(() => {
+            gameTime++;
+            timerDisplay.textContent = `Time: ${gameTime}s`;
+        }, 1000);
+    }
+
+    // Function to stop the timer
+    function stopTimer() {
+        clearInterval(gameTimer);
+    }
+
+    // Function to handle game win
+    function winGame() {
+        stopTimer();
+        overlay.style.display = 'none'; // Hide start button
+        winScreen.style.display = 'flex'; // Show win screen
+        finalScore.textContent = `Total Score: ${score}`;
+        timeTaken.textContent = `Time Needed: ${gameTime}s`;
+    }
+
+    // Function to reset the game
+    function resetGame() {
+        gameTime = 0;
+        timerDisplay.textContent = `Time: 0s`;
+        score = 0;
+        updateScore();
+        player.spawned = false;
+        winScreen.style.display = 'none';
+        overlay.style.display = 'flex'; // Show start button again
+    }
+
     // MAIN UPDATE FUNCTION
     function update() {
         // Reset grounded state
@@ -409,16 +451,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 
         // Handle pickup collection
         pickups.forEach(pickup => {
-            if (!pickup.collected && player.y + player.height > pickup.y &&
-                player.y < pickup.y + pickup.height &&
-                player.x + player.width > pickup.x &&
-                player.x < pickup.x + pickup.width) {
-                pickup.collected = true;
-                score += 10;
-                updateScore();
-                playPickupSound();
-                createParticles(pickup.x + pickup.width / 2, pickup.y - pickup.height);
-            }
+            handlePickupCollection(pickup);
         });
 
         // Boundary checking
@@ -438,6 +471,26 @@ window.addEventListener('DOMContentLoaded', (event) => {
 
         // Draw debug info
         //drawDebugInfoOnCanvas()
+    }
+
+    // Handle pickup collection and check for win condition
+    function handlePickupCollection(pickup) {
+        if (!pickup.collected && player.y + player.height > pickup.y &&
+            player.y < pickup.y + pickup.height &&
+            player.x + player.width > pickup.x &&
+            player.x < pickup.x + pickup.width) {
+
+            pickup.collected = true;
+            score += 10;
+            updateScore();
+            playPickupSound();
+            createParticles(pickup.x + pickup.width / 2, pickup.y - pickup.height);
+
+            // Check if this pickup has the tag 'winTheGame'
+            if (pickup.tag === 'winTheGame') {
+                winGame(); // Call the winGame function
+            }
+        }
     }
 
     function drawDebugInfoOnCanvas() {
@@ -538,6 +591,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
     canvas.addEventListener('mousemove', updateMousePosition);
     canvas.addEventListener('click', handleCanvasClick);
     startButton.addEventListener('click', startGame);
+    replayButton.addEventListener('click', resetGame);
     soundToggleButton.addEventListener('click', toggleSound);
     
 
@@ -551,7 +605,11 @@ window.addEventListener('DOMContentLoaded', (event) => {
         player.spawned = true;
         player.x = 250;
         player.y = 300;
-        overlay.style.display = 'none';
+        overlay.style.display = 'none'; // Hide start button
+        gameTime = 0;
+        timerDisplay.textContent = `Time: 0s`;
+        startTimer(); // Start the timer
+        gameStarted = true;
     }
 
     updateScore();
