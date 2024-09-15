@@ -24,7 +24,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 
     // Different kinds of pickups
     const pickupImages = {
-        'red': './images/pickup_red.png',
+        'red': 'images/pickup_red.png',
         'blue': './images/pickup_blue.png',
         'star': './images/pickup_star.png',
         // Add more types and their corresponding image paths as needed
@@ -104,13 +104,30 @@ window.addEventListener('DOMContentLoaded', (event) => {
     ];
 
     // Reference to the used images (Player & pickups)
+    player.image.onload = function () {
+        console.log('Player image loaded successfully');
+    };
     player.image.src = './images/character1.png';
     player.blinkImage.src = './images/character1_blink.png';
+
+
+    function loadImage(pickup) {
+        const img = new Image();
+        img.onload = function () {
+            pickup.image = img;
+        };
+        img.onerror = function () {
+            console.error(`Failed to load image: ${pickupImages[pickup.type]}`);
+            // Fallback to a default image if the specified image fails to load
+            img.src = './images/pickup_default.png';
+        };
+        img.src = pickupImages[pickup.type];
+    }
 
     // generating the pickups
     pickups.forEach(pickup => {
         if (pickup.type in pickupImages) {
-            pickup.image.src = pickupImages[pickup.type];
+            loadImage(pickup);
         } else {
             console.warn(`No image defined for pickup type: ${pickup.type}. Using default.`);
             pickup.image.src = './images/pickup_default.png';
@@ -273,12 +290,12 @@ window.addEventListener('DOMContentLoaded', (event) => {
 
     function drawPickups() {
         pickups.forEach(pickup => {
-            if (!pickup.collected) {
+            if (!pickup.collected && pickup.image.complete && pickup.image.naturalWidth > 0) {
                 ctx.save();
                 ctx.translate(pickup.x + pickup.width / 2, pickup.y + pickup.height / 2);
 
                 if (pickup.type === 'star') {
-                    let scaleX = 0.0 + pickup.scaleX * 1; // This makes it scale from 0.5 to 1
+                    let scaleX = 0.0 + pickup.scaleX * 1;
 
                     if (pickup.flipped) {
                         scaleX = -scaleX;
@@ -298,6 +315,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
             }
         });
     }
+
 
     function updateScore() {
         document.getElementById('score').textContent = 'Score: ' + score;
@@ -452,15 +470,18 @@ window.addEventListener('DOMContentLoaded', (event) => {
     }
 
     function playLandingSound() {
-        const currentTime = performance.now();  // Get the current time
-
-        // Check if 200ms (0.2 seconds) have passed since the last landing sound
+        const currentTime = performance.now();
         if (currentTime - lastLandingTime >= 200) {
-            landingSound.currentTime = 0;  // Reset the sound
-            landingSound.play();
-            lastLandingTime = currentTime;  // Update the last landing time
+            landingSound.currentTime = 0;
+            try {
+                landingSound.play();
+            } catch (error) {
+                console.error("Error playing landing sound:", error);
+            }
+            lastLandingTime = currentTime;
         }
     }
+
 
 
     function keyDownHandler(e) {
@@ -475,8 +496,13 @@ window.addEventListener('DOMContentLoaded', (event) => {
             case ' ':
                 jump();
                 break;
+            case 'p':
+            case 'P':
+                togglePlatformPlacement();
+                break;
         }
     }
+
 
     function keyUpHandler(e) {
         if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
@@ -488,11 +514,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
     canvas.addEventListener('mousemove', updateMousePosition);
     canvas.addEventListener('click', handleCanvasClick);
     startButton.addEventListener('click', startGame);
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'p' || e.key === 'P') {
-            togglePlatformPlacement();
-        }
-    });
+    
     document.addEventListener('keydown', keyDownHandler);
     document.addEventListener('keyup', keyUpHandler);
 
