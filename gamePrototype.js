@@ -3,6 +3,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
     const ctx = canvas.getContext('2d');
     const overlay = document.getElementById('overlay');
     const startButton = document.getElementById('startButton');
+    const soundToggleButton = document.getElementById('soundToggleButton');
 
     // Ensure canvas size matches HTML
     canvas.width = 512;
@@ -34,6 +35,12 @@ window.addEventListener('DOMContentLoaded', (event) => {
     jumpSound.volume = 0.15;
     landingSound.volume = 0.3;
     pickupSound.volume = 0.3;
+
+    // Array of all game sounds for easy mute control
+    const allSounds = [jumpSound, landingSound, pickupSound];
+
+    // Sound toggle state
+    let soundMuted = false;
 
     // Anim vars
     let pickupAnimationTime = 0;
@@ -316,15 +323,29 @@ window.addEventListener('DOMContentLoaded', (event) => {
         });
     }
 
-
     function updateScore() {
         document.getElementById('score').textContent = 'Score: ' + score;
     }
 
     // play Sound on pickup
     function playPickupSound() {
-        pickupSound.currentTime = 0;
-        pickupSound.play().catch(error => console.error("Error playing sound:", error));
+        if (!soundMuted) {  // Check if sound is not muted
+            pickupSound.currentTime = 0;
+            pickupSound.play().catch(error => console.error("Error playing sound:", error));
+        }
+    }
+
+    // Function to toggle sound on/off
+    function toggleSound() {
+        soundMuted = !soundMuted;
+
+        // Update the muted state of all sounds
+        allSounds.forEach(sound => {
+            sound.muted = soundMuted;
+        });
+
+        // Update button text
+        soundToggleButton.textContent = soundMuted ? 'Sound On' : 'Sound Off';
     }
 
     // MAIN UPDATE FUNCTION
@@ -464,25 +485,27 @@ window.addEventListener('DOMContentLoaded', (event) => {
             player.dy = -player.jumpStrength;
             player.jumping = true;
             player.grounded = false;
-            jumpSound.currentTime = 0; // Reset the sound
-            jumpSound.play();
+            if (!soundMuted) {  // Check if sound is not muted
+                jumpSound.currentTime = 0; // Reset the sound
+                jumpSound.play();
+            }
         }
     }
 
     function playLandingSound() {
-        const currentTime = performance.now();
-        if (currentTime - lastLandingTime >= 200) {
-            landingSound.currentTime = 0;
-            try {
-                landingSound.play();
-            } catch (error) {
-                console.error("Error playing landing sound:", error);
+        if (!soundMuted) {  // Check if sound is not muted
+            const currentTime = performance.now();
+            if (currentTime - lastLandingTime >= 200) {
+                landingSound.currentTime = 0;
+                try {
+                    landingSound.play();
+                } catch (error) {
+                    console.error("Error playing landing sound:", error);
+                }
+                lastLandingTime = currentTime;
             }
-            lastLandingTime = currentTime;
         }
     }
-
-
 
     function keyDownHandler(e) {
         switch (e.key) {
@@ -503,7 +526,6 @@ window.addEventListener('DOMContentLoaded', (event) => {
         }
     }
 
-
     function keyUpHandler(e) {
         if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
             player.dx = 0;
@@ -511,12 +533,13 @@ window.addEventListener('DOMContentLoaded', (event) => {
     }
 
     // Add event listeners
+    document.addEventListener('keydown', keyDownHandler);
+    document.addEventListener('keyup', keyUpHandler);
     canvas.addEventListener('mousemove', updateMousePosition);
     canvas.addEventListener('click', handleCanvasClick);
     startButton.addEventListener('click', startGame);
+    soundToggleButton.addEventListener('click', toggleSound);
     
-    document.addEventListener('keydown', keyDownHandler);
-    document.addEventListener('keyup', keyUpHandler);
 
     function gameLoop() {
         update();

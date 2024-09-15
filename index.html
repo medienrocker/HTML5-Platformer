@@ -58,13 +58,40 @@
             transform: scale(1.05);
         }
 
+        #scoreContainer {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 10px 0;
+        }
+
+        #soundToggleButton {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #4c75af;
+            color: white;
+            border: 2px solid white;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        #soundToggleButton:hover {
+            background-color: #45a049;
+            transform: scale(1.05);
+        }
+
+
         /* WIN SCREEN */
-        
     </style>
 </head>
 
 <body>
-    <div id="score">Score: 0</div>
+    <div id="scoreContainer">
+        <div id="score">Score: 0</div>
+        <!-- Sound Toggle Button -->
+        <button id="soundToggleButton">Sound Off</button>
+    </div>
     <div id="gameContainer">
         <canvas id="gameCanvas" width="512" height="512"></canvas>
         <div id="overlay">
