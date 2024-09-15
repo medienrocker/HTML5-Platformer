@@ -1,8 +1,8 @@
 window.addEventListener('DOMContentLoaded', (event) => {
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
-    console.log('Canvas:', canvas);
-    console.log('Context:', ctx);
+    const overlay = document.getElementById('overlay');
+    const startButton = document.getElementById('startButton');
 
     // Ensure canvas size matches HTML
     canvas.width = 512;
@@ -16,12 +16,20 @@ window.addEventListener('DOMContentLoaded', (event) => {
     let newPlatformHeight = 4;
     let lastLandingTime = 0;  // Initialize the last landing sound play time
     let wasGrounded = false;  // Track if the player was grounded in the previous frame
-    
+
     // Audio for jump and landing
     const jumpSound = new Audio('./audio/jump_sound2.wav');
     const landingSound = new Audio('./audio/landing_sound.wav');
     const pickupSound = new Audio('./audio/pickup_sound.wav');
-    
+
+    // Different kinds of pickups
+    const pickupImages = {
+        'red': './images/pickup_red.png',
+        'blue': './images/pickup_blue.png',
+        'star': './images/pickup_star.png',
+        // Add more types and their corresponding image paths as needed
+    }
+
     // Set volumes
     jumpSound.volume = 0.15;
     landingSound.volume = 0.3;
@@ -53,6 +61,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
         breathOffset: 0,
         blinkTimer: 0,
         blinking: false,
+        spawned: false
     };
 
     const platforms = [
@@ -65,19 +74,19 @@ window.addEventListener('DOMContentLoaded', (event) => {
         { x: 400, y: 366, width: 112, height: 4, movementType: 'static', tag: '' },
         { x: 425, y: 326, width: 87, height: 4, movementType: 'static', tag: '' },
         { x: 0, y: 242, width: 53, height: 4, movementType: 'static', tag: '' },
-        { x: 225, y: 200, width: 70, height: 8, movementType: 'static', tag: '' },
-        { x: 274, y: 74, width: 100, height: 6, movementType: 'static', tag: '' },
-        { x: 85, y: 122, width: 100, height: 6, movementType: 'static', tag: '' },
+        { x: 220, y: 230, width: 70, height: 8, movementType: 'static', tag: '' },
+        //{ x: 274, y: 74, width: 100, height: 6, movementType: 'static', tag: '' },
+        //{ x: 85, y: 122, width: 100, height: 6, movementType: 'static', tag: '' },
         // Moving platforms
         {
-            x: 100, y: 300, width: 100, height: 6,
+            x: 274, y: 70, width: 80, height: 6,
             movementType: 'horizontal', tag: 'special',
             speed: 0.5,
-            leftBound: 50,
-            rightBound: 300
+            leftBound: 160,
+            rightBound: 400
         },
         {
-            x: 400, y: 200, width: 100, height: 6,
+            x: 400, y: 200, width: 80, height: 6,
             movementType: 'vertical', tag: 'special',
             speed: 0.5,
             upperBound: 150,
@@ -86,17 +95,27 @@ window.addEventListener('DOMContentLoaded', (event) => {
     ];
 
     const pickups = [
-        { x: 15, y: 390, width: 15, height: 15, collected: false, image: new Image(), offsetY: 0, type: 'red'},
-        { x: 350, y: 50, width: 15, height: 15, collected: false, image: new Image(), offsetY: 0, type: 'red'},
-        { x: 50, y: 180, width: 15, height: 15, collected: false, image: new Image(), offsetY: 0, type: 'red'},
-        { x: 250, y: 180, width: 15, height: 15, collected: false, image: new Image(), offsetY: 0, type: 'red'},
-        { x: 250, y: 160, width: 15, height: 15, collected: false, image: new Image(), offsetY: 0, type: 'red'}
+        { x: 15, y: 390, width: 15, height: 15, collected: false, image: new Image(), offsetY: 0, type: 'red' },
+        { x: 180, y: 27, width: 30, height: 30, collected: false, image: new Image(), offsetY: 0, type: 'star' },
+        { x: 50, y: 180, width: 15, height: 15, collected: false, image: new Image(), offsetY: 0, type: 'red' },
+        { x: 250, y: 180, width: 15, height: 15, collected: false, image: new Image(), offsetY: 0, type: 'red' },
+        { x: 250, y: 160, width: 15, height: 15, collected: false, image: new Image(), offsetY: 0, type: 'red' },
+        { x: 350, y: 330, width: 15, height: 15, collected: false, image: new Image(), offsetY: 0, type: 'red' }
     ];
 
     // Reference to the used images (Player & pickups)
     player.image.src = './images/character1.png';
     player.blinkImage.src = './images/character1_blink.png';
-    pickups.forEach(pickup => pickup.image.src = './images/pickup1.png');
+
+    // generating the pickups
+    pickups.forEach(pickup => {
+        if (pickup.type in pickupImages) {
+            pickup.image.src = pickupImages[pickup.type];
+        } else {
+            console.warn(`No image defined for pickup type: ${pickup.type}. Using default.`);
+            pickup.image.src = './images/pickup_default.png';
+        }
+    });
 
     // Particle system
     class Particle {
@@ -197,14 +216,16 @@ window.addEventListener('DOMContentLoaded', (event) => {
     }
 
     function drawPlayer() {
-        const currentImage = player.blinking ? player.blinkImage : player.image;
-        ctx.drawImage(
-            currentImage,
-            player.x,
-            player.y - player.breathOffset,
-            player.width,
-            player.height + player.breathOffset * 2
-        );
+        if (player.spawned) {
+            const currentImage = player.blinking ? player.blinkImage : player.image;
+            ctx.drawImage(
+                currentImage,
+                player.x,
+                player.y - player.breathOffset,
+                player.width,
+                player.height + player.breathOffset * 2
+            );
+        }
     }
 
     function drawPlatforms() {
@@ -234,7 +255,18 @@ window.addEventListener('DOMContentLoaded', (event) => {
         pickupAnimationTime += pickupAnimationSpeed;
         pickups.forEach(pickup => {
             if (!pickup.collected) {
-                pickup.offsetY = Math.sin(pickupAnimationTime) * pickupAnimationAmplitude;
+                switch (pickup.type) {
+                    case 'star':
+                        let t = (pickupAnimationTime * 0.16) % 1;
+                        pickup.scaleX = t <= 0.5 ? t * 2 : 2 - t * 2;
+                        // Change this line:
+                        //pickup.flipped = t > 0.9 || t < 0.1; // Flip when t is in the second half of the cycle
+                        break;
+                    case 'default':
+                    default:
+                        pickup.offsetY = Math.sin(pickupAnimationTime) * pickupAnimationAmplitude;
+                        break;
+                }
             }
         });
     }
@@ -242,7 +274,27 @@ window.addEventListener('DOMContentLoaded', (event) => {
     function drawPickups() {
         pickups.forEach(pickup => {
             if (!pickup.collected) {
-                ctx.drawImage(pickup.image, pickup.x, pickup.y + pickup.offsetY, pickup.width, pickup.height);
+                ctx.save();
+                ctx.translate(pickup.x + pickup.width / 2, pickup.y + pickup.height / 2);
+
+                if (pickup.type === 'star') {
+                    let scaleX = 0.0 + pickup.scaleX * 1; // This makes it scale from 0.5 to 1
+
+                    if (pickup.flipped) {
+                        scaleX = -scaleX;
+                    }
+
+                    ctx.scale(scaleX, 1);
+                } else {
+                    ctx.translate(0, pickup.offsetY || 0);
+                }
+
+                ctx.drawImage(
+                    pickup.image,
+                    -pickup.width / 2, -pickup.height / 2,
+                    pickup.width, pickup.height
+                );
+                ctx.restore();
             }
         });
     }
@@ -259,12 +311,14 @@ window.addEventListener('DOMContentLoaded', (event) => {
 
     // MAIN UPDATE FUNCTION
     function update() {
-        player.dy += gravity;
-        player.x += player.dx;
-        player.y += player.dy;
-
         // Reset grounded state
         let groundedOnThisFrame = false;  // Make sure this variable is reset at the start of every frame
+
+        if (player.spawned) {
+            player.dy += gravity;
+            player.x += player.dx;
+            player.y += player.dy;
+        }
 
         // Move platforms
         updatePlatforms();
@@ -379,15 +433,6 @@ window.addEventListener('DOMContentLoaded', (event) => {
         }
     }
 
-    // Add event listeners
-    canvas.addEventListener('mousemove', updateMousePosition);
-    canvas.addEventListener('click', handleCanvasClick);
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'p' || e.key === 'P') {
-            togglePlatformPlacement();
-        }
-    });
-
     function moveLeft() {
         player.dx = -player.speed;
     }
@@ -439,12 +484,29 @@ window.addEventListener('DOMContentLoaded', (event) => {
         }
     }
 
+    // Add event listeners
+    canvas.addEventListener('mousemove', updateMousePosition);
+    canvas.addEventListener('click', handleCanvasClick);
+    startButton.addEventListener('click', startGame);
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'p' || e.key === 'P') {
+            togglePlatformPlacement();
+        }
+    });
     document.addEventListener('keydown', keyDownHandler);
     document.addEventListener('keyup', keyUpHandler);
 
     function gameLoop() {
         update();
         requestAnimationFrame(gameLoop);
+    }
+
+    // Start game function
+    function startGame() {
+        player.spawned = true;
+        player.x = 250;
+        player.y = 300;
+        overlay.style.display = 'none';
     }
 
     updateScore();

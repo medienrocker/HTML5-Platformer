@@ -6,9 +6,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HTML5 Platformer Game</title>
     <style>
+        #gameContainer {
+            position: relative;
+            width: 512px;
+            height: 512px;
+            margin: 0 auto;
+        }
+
         #gameCanvas {
             display: block;
-            margin: 0 auto;
             background: url('./images/Platformer-Background.png') no-repeat center center;
             background-size: cover;
             border: 2px solid black;
@@ -22,14 +28,46 @@
             font-family: Arial, sans-serif;
             margin: 10px;
         }
+
+        #overlay {
+            position: absolute;
+            top: 2px;
+            left: 1.5px;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #startButton {
+            padding: 15px 30px;
+            font-size: 24px;
+            background-color: #4CAF50;
+            color: white;
+            border: 4px solid white;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        #startButton:hover {
+            background-color: #45a049;
+            transform: scale(1.05);
+        }
     </style>
 </head>
 
 <body>
     <div id="score">Score: 0</div>
-    <canvas id="gameCanvas" width="512" height="512"></canvas>
-
-    <!-- Include the main game script as a module -->
+    <div id="gameContainer">
+        <canvas id="gameCanvas" width="512" height="512"></canvas>
+        <div id="overlay">
+            <button id="startButton">START</button>
+        </div>
+    </div>
     <script src="gamePrototype.js"></script>
 </body>
 
