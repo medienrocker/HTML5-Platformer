@@ -23,6 +23,9 @@ window.addEventListener('DOMContentLoaded', (event) => {
     let newPlatformHeight = 4;
     let lastLandingTime = 0;  // Initialize the last landing sound play time
     let wasGrounded = false;  // Track if the player was grounded in the previous frame
+    let playerTrail = []; // Array to store the player's trail positions
+    const maxTrailLength = 20; // Maximum number of points in the trail
+
 
     // Audio for jump and landing
     const jumpSound = new Audio('./audio/jump_sound2.wav');
@@ -490,9 +493,62 @@ window.addEventListener('DOMContentLoaded', (event) => {
         // Clear and redraw
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         drawPlatforms();
+        drawPlayerTrail(ctx); // Draw the player's trail
         drawPickups();
         drawPlayer();
         drawParticles();
+
+        function drawPlayerTrail(ctx) {
+            if (playerTrail.length < 2) return; // Need at least two points to draw a line
+
+            ctx.lineWidth = 2; // Thickness of the trail line
+
+            ctx.beginPath();
+            // Start the path at the first point
+            ctx.moveTo(playerTrail[0].x, playerTrail[0].y);
+
+            // Draw lines between each point in the trail
+            for (let i = 1; i < playerTrail.length; i++) {
+                // Calculate the opacity based on the age of the point
+                const age = Date.now() - playerTrail[i].timestamp;
+                const opacity = Math.max (0.7 - age / 300, 0); // Fades to 0 opacity over 1 second
+
+                // Set the stroke style for each segment
+                ctx.strokeStyle = `rgba(249, 61, 61, ${opacity})`;
+
+                // Draw the line segment
+                ctx.lineTo(playerTrail[i].x, playerTrail[i].y);
+                ctx.stroke(); // Render the line segment with the current opacity
+
+                // Begin a new path for the next segment to handle different opacities
+                ctx.beginPath();
+                ctx.moveTo(playerTrail[i].x, playerTrail[i].y);
+            }
+        }
+
+
+
+        function updatePlayerTrail() {
+            // Add the current position of the player with a timestamp
+            playerTrail.push({
+                x: player.x + player.width / 2,
+                y: player.y + player.height / 2,
+                timestamp: Date.now()
+            });
+
+            // Remove trail points older than 1 second (1000 ms)
+            playerTrail = playerTrail.filter(point => Date.now() - point.timestamp <= 1000);
+
+            // Clear the trail when the player lands
+            if (player.grounded) {
+                playerTrail = [];
+            }
+        }
+
+
+        if (!player.grounded) {
+            updatePlayerTrail();
+        }
 
         // Draw debug info
         //drawDebugInfoOnCanvas()

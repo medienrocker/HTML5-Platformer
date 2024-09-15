@@ -118,12 +118,30 @@
             background-color: #45a049;
         }
 
+        /* New styles for the logo */
+        #logoContainer {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 1000;
+        }
 
-        /* WIN SCREEN */
+        #logo {
+            width: 50px; /* Adjust this to match your logo's dimensions */
+            height: 50px; /* Adjust this to match your logo's dimensions */
+            display: block;
+        }
     </style>
 </head>
 
 <body>
+    <!-- New logo container -->
+    <div id="logoContainer">
+        <a href="https://bildungssprit.de" target="_blank">
+            <img src="images/bildungssprit_logo.png" alt="Bildungssprit Logo" id="logo" title="bildungssprit.de">
+        </a>
+    </div>
+
     <div id="scoreContainer">
         <div id="score">Score: 0</div>
         <div id="timer">Time: 0s</div> <!-- Timer display -->
