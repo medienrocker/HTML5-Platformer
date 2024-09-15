@@ -50,6 +50,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
     let gameTime = 0;
     let gameTimer;
     let soundMuted = false;
+    let gameOver = false; // Flag to disable input when the win screen is active
 
     // Anim vars
     let pickupAnimationTime = 0;
@@ -111,12 +112,12 @@ window.addEventListener('DOMContentLoaded', (event) => {
     ];
 
     const pickups = [
-        { x: 15, y: 390, width: 15, height: 15, collected: false, image: new Image(), offsetY: 0, type: 'red' , tag: ''},
-        { x: 180, y: 27, width: 30, height: 30, collected: false, image: new Image(), offsetY: 0, type: 'star' , tag: 'winTheGame'},
-        { x: 50, y: 180, width: 15, height: 15, collected: false, image: new Image(), offsetY: 0, type: 'red' , tag: ''},
-        { x: 250, y: 180, width: 15, height: 15, collected: false, image: new Image(), offsetY: 0, type: 'red' , tag: ''},
-        { x: 250, y: 160, width: 15, height: 15, collected: false, image: new Image(), offsetY: 0, type: 'red' , tag: ''},
-        { x: 350, y: 330, width: 15, height: 15, collected: false, image: new Image(), offsetY: 0, type: 'red' , tag: ''}
+        { x: 15, y: 390, width: 15, height: 15, collected: false, image: new Image(), offsetY: 0, type: 'red', tag: '' },
+        { x: 180, y: 27, width: 30, height: 30, collected: false, image: new Image(), offsetY: 0, type: 'star', tag: 'winTheGame' },
+        { x: 50, y: 180, width: 15, height: 15, collected: false, image: new Image(), offsetY: 0, type: 'red', tag: '' },
+        { x: 250, y: 180, width: 15, height: 15, collected: false, image: new Image(), offsetY: 0, type: 'red', tag: '' },
+        { x: 250, y: 160, width: 15, height: 15, collected: false, image: new Image(), offsetY: 0, type: 'red', tag: '' },
+        { x: 350, y: 330, width: 15, height: 15, collected: false, image: new Image(), offsetY: 0, type: 'red', tag: '' }
     ];
 
     // Reference to the used images (Player & pickups)
@@ -377,6 +378,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
         winScreen.style.display = 'flex'; // Show win screen
         finalScore.textContent = `Total Score: ${score}`;
         timeTaken.textContent = `Time Needed: ${gameTime}s`;
+        gameOver = true; // true = Disable player input
     }
 
     // Function to reset the game
@@ -385,10 +387,33 @@ window.addEventListener('DOMContentLoaded', (event) => {
         timerDisplay.textContent = `Time: 0s`;
         score = 0;
         updateScore();
+
+        // Reset player position and state
         player.spawned = false;
+        player.x = 250;
+        player.y = 300;
+        player.dx = 0;
+        player.dy = 0;
+        player.grounded = false;
+        player.jumping = false;
+
+        // Reset pickups
+        pickups.forEach(pickup => {
+            pickup.collected = false; // Mark all pickups as not collected
+            pickup.offsetY = 0; // Reset any offset animation effects
+            pickup.scaleX = 1; // Reset scaling for animated pickups like 'star'
+            pickup.flipped = false; // Reset flipping if used
+        });
+
+        // Hide the win screen and show the start button again
         winScreen.style.display = 'none';
-        overlay.style.display = 'flex'; // Show start button again
+        overlay.style.display = 'flex';
+
+        // Reset game state variables
+        gameOver = false;
+        gameStarted = false;
     }
+
 
     // MAIN UPDATE FUNCTION
     function update() {
@@ -561,6 +586,8 @@ window.addEventListener('DOMContentLoaded', (event) => {
     }
 
     function keyDownHandler(e) {
+        if (gameOver) return; // Disable input if the game is over
+
         switch (e.key) {
             case 'ArrowLeft':
                 moveLeft();
@@ -580,6 +607,8 @@ window.addEventListener('DOMContentLoaded', (event) => {
     }
 
     function keyUpHandler(e) {
+        if (gameOver) return; // Disable input if the game is over
+
         if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
             player.dx = 0;
         }
@@ -593,7 +622,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
     startButton.addEventListener('click', startGame);
     replayButton.addEventListener('click', resetGame);
     soundToggleButton.addEventListener('click', toggleSound);
-    
+
 
     function gameLoop() {
         update();
@@ -610,6 +639,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
         timerDisplay.textContent = `Time: 0s`;
         startTimer(); // Start the timer
         gameStarted = true;
+        gameOver = false; // Enable player input
     }
 
     updateScore();
