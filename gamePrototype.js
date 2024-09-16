@@ -11,6 +11,11 @@ window.addEventListener('DOMContentLoaded', (event) => {
     const timeTaken = document.getElementById('timeTaken');
     const replayButton = document.getElementById('replayButton');
 
+    // Get control button elements
+    const leftButton = document.getElementById('leftButton');
+    const rightButton = document.getElementById('rightButton');
+    const upButton = document.getElementById('upButton');
+
     // Ensure canvas size matches HTML
     canvas.width = 512;
     canvas.height = 512;
@@ -25,6 +30,8 @@ window.addEventListener('DOMContentLoaded', (event) => {
     let wasGrounded = false;  // Track if the player was grounded in the previous frame
     let playerTrail = []; // Array to store the player's trail positions
     const maxTrailLength = 20; // Maximum number of points in the trail
+    let trailDelayCounter = 0; // Counter to delay the start of the trail
+    const trailDelayFrames = 10; // Number of frames to delay the start of the trail
 
 
     // Audio for jump and landing
@@ -501,26 +508,26 @@ window.addEventListener('DOMContentLoaded', (event) => {
         function drawPlayerTrail(ctx) {
             if (playerTrail.length < 2) return; // Need at least two points to draw a line
 
-            ctx.lineWidth = 2; // Thickness of the trail line
-
             ctx.beginPath();
             // Start the path at the first point
             ctx.moveTo(playerTrail[0].x, playerTrail[0].y);
 
             // Draw lines between each point in the trail
             for (let i = 1; i < playerTrail.length; i++) {
-                // Calculate the opacity based on the age of the point
+                // Calculate the opacity and thickness based on the age of the point
                 const age = Date.now() - playerTrail[i].timestamp;
-                const opacity = Math.max (0.7 - age / 300, 0); // Fades to 0 opacity over 1 second
+                const opacity = Math.max(0.7 - age / 300, 0); // Fades to 0 opacity over 1 second
+                const thickness = Math.max(9 - (age / 15), 2); // Starts thick and becomes thinner
 
                 // Set the stroke style for each segment
                 ctx.strokeStyle = `rgba(249, 61, 61, ${opacity})`;
+                ctx.lineWidth = thickness; // Adjust the line width for each segment
 
                 // Draw the line segment
                 ctx.lineTo(playerTrail[i].x, playerTrail[i].y);
-                ctx.stroke(); // Render the line segment with the current opacity
+                ctx.stroke(); // Render the line segment with the current opacity and thickness
 
-                // Begin a new path for the next segment to handle different opacities
+                // Begin a new path for the next segment to handle different opacities and thicknesses
                 ctx.beginPath();
                 ctx.moveTo(playerTrail[i].x, playerTrail[i].y);
             }
@@ -528,8 +535,11 @@ window.addEventListener('DOMContentLoaded', (event) => {
 
 
 
+
         function updatePlayerTrail() {
-            // Add the current position of the player with a timestamp
+            
+
+            // Add the current position of the player with an offset and timestamp
             playerTrail.push({
                 x: player.x + player.width / 2,
                 y: player.y + player.height / 2,
@@ -678,6 +688,28 @@ window.addEventListener('DOMContentLoaded', (event) => {
     startButton.addEventListener('click', startGame);
     replayButton.addEventListener('click', resetGame);
     soundToggleButton.addEventListener('click', toggleSound);
+
+    // Add event listeners for click or touch events
+    leftButton.addEventListener('mousedown', moveLeft);
+    leftButton.addEventListener('touchstart', moveLeft);
+
+    rightButton.addEventListener('mousedown', moveRight);
+    rightButton.addEventListener('touchstart', moveRight);
+
+    upButton.addEventListener('mousedown', jump);
+    upButton.addEventListener('touchstart', jump);
+
+    // Add event listeners to stop movement when the button is released
+    leftButton.addEventListener('mouseup', stopMovement);
+    leftButton.addEventListener('touchend', stopMovement);
+
+    rightButton.addEventListener('mouseup', stopMovement);
+    rightButton.addEventListener('touchend', stopMovement);
+
+    // Function to stop player movement
+    function stopMovement() {
+        player.dx = 0;
+    }
 
 
     function gameLoop() {

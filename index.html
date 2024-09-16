@@ -127,9 +127,37 @@
         }
 
         #logo {
-            width: 50px; /* Adjust this to match your logo's dimensions */
-            height: 50px; /* Adjust this to match your logo's dimensions */
+            width: 50px;
+            /* Adjust this to match your logo's dimensions */
+            height: 50px;
+            /* Adjust this to match your logo's dimensions */
             display: block;
+        }
+
+        /* ----- Controller buttons ----- */
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 20px;
+        }
+
+        #controls button {
+            width: 50px;
+            height: 50px;
+            font-size: 24px;
+            border-radius: 50%;
+            border: 2px solid #333;
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        #controls button:hover {
+            background-color: #e8da0e;
         }
     </style>
 </head>
@@ -145,14 +173,21 @@
     <div id="scoreContainer">
         <div id="score">Score: 0</div>
         <div id="timer">Time: 0s</div> <!-- Timer display -->
-        <button id="soundToggleButton">Sound Off</button>
+        <button id="soundToggleButton" type="button">Sound Off</button>
     </div>
 
     <div id="gameContainer">
         <canvas id="gameCanvas" width="512" height="512"></canvas>
         <div id="overlay">
-            <button id="startButton">START</button>
+            <button id="startButton" type="button">START</button>
         </div>
+    </div>
+
+    <!-- Control Buttons -->
+    <div id="controls">
+        <button id="leftButton" type="button">⬅️</button>
+        <button id="upButton" type="button">⬆️</button>
+        <button id="rightButton" type="button">➡️</button>
     </div>
 
     <!-- Win Screen Overlay -->
@@ -160,7 +195,7 @@
         <div id="winMessage">YOU WIN</div>
         <div id="finalScore"></div>
         <div id="timeTaken"></div>
-        <button id="replayButton">Replay</button>
+        <button id="replayButton" type="button">Replay</button>
     </div>
 
     <script src="gamePrototype.js"></script>
