@@ -6,6 +6,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HTML5 Platformer Game</title>
     <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-family: Arial, sans-serif;
+        }
+
         #gameContainer {
             position: relative;
             width: 512px;
@@ -22,19 +29,53 @@
             height: 512px;
         }
 
-        #score {
+        #topBar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 512px;
+            margin: 10px auto;
+        }
+
+        #scoreTimeContainer {
+            flex-grow: 1;
             text-align: center;
             font-size: 24px;
-            font-family: Arial, sans-serif;
-            margin: 10px;
+        }
+
+        #logoContainer {
+            width: 50px;
+            height: 50px;
+        }
+
+        #logo {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        #soundToggleButton {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #4c75af;
+            color: white;
+            border: 2px solid white;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        #soundToggleButton:hover {
+            background-color: #45a049;
+            transform: scale(1.05);
         }
 
         #overlay {
             position: absolute;
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
+            right: -2px;
+            bottom: -2px;
             background-color: rgba(0, 0, 0, 0.7);
             display: flex;
             justify-content: center;
@@ -58,41 +99,10 @@
             transform: scale(1.05);
         }
 
-        #scoreContainer {
-            font-family: sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            margin: 10px 0;
-        }
-
-        #soundToggleButton {
-            padding: 10px 20px;
-            font-size: 16px;
-            background-color: #4c75af;
-            color: white;
-            border: 2px solid white;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        #soundToggleButton:hover {
-            background-color: #45a049;
-            transform: scale(1.05);
-        }
-
-        #timer {
-            font-size: 18px;
-            margin-top: 5px;
-        }
-
         #winScreen {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            right: -2px;
+            bottom: -2px;
             background-color: rgba(0, 0, 0, 0.7);
             display: flex;
             flex-direction: column;
@@ -100,6 +110,8 @@
             align-items: center;
             color: white;
             font-size: 24px;
+            width: 512px;  /* Match canvas width */
+            height: 512px; /* Match canvas height */
         }
 
         #replayButton {
@@ -118,37 +130,18 @@
             background-color: #45a049;
         }
 
-        /* New styles for the logo */
-        #logoContainer {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            z-index: 1000;
-        }
-
-        #logo {
-            width: 50px;
-            /* Adjust this to match your logo's dimensions */
-            height: 50px;
-            /* Adjust this to match your logo's dimensions */
-            display: block;
-        }
-
-        /* ----- Controller buttons ----- */
         #controls {
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
             display: flex;
+            justify-content: center;
             gap: 20px;
+            margin: 10px auto;
         }
 
         #controls button {
-            width: 50px;
-            height: 50px;
+            width: 100px;
+            height: 60px;
             font-size: 24px;
-            border-radius: 50%;
+            border-radius: 5px;
             border: 2px solid #333;
             background-color: #4CAF50;
             color: white;
@@ -163,17 +156,18 @@
 </head>
 
 <body>
-    <!-- New logo container -->
-    <div id="logoContainer">
-        <a href="https://bildungssprit.de" target="_blank">
-            <img src="images/bildungssprit_logo.png" alt="Bildungssprit Logo" id="logo" title="bildungssprit.de">
-        </a>
-    </div>
-
-    <div id="scoreContainer">
-        <div id="score">Score: 0</div>
-        <div id="timer">Time: 0s</div> <!-- Timer display -->
-        <button id="soundToggleButton" type="button">Sound Off</button>
+    <div id="topBar">
+        <div id="soundToggleContainer">
+            <button id="soundToggleButton" type="button">Sound Off</button>
+        </div>
+        <div id="scoreTimeContainer">
+            <span id="score">Score: 0</span> / <span id="timer">Time: 0s</span>
+        </div>
+        <div id="logoContainer">
+            <a href="https://bildungssprit.de" target="_blank">
+                <img src="images/bildungssprit_logo.png" alt="Bildungssprit Logo" id="logo" title="bildungssprit.de">
+            </a>
+        </div>
     </div>
 
     <div id="gameContainer">
@@ -181,22 +175,22 @@
         <div id="overlay">
             <button id="startButton" type="button">START</button>
         </div>
+
+        <div id="winScreen" style="display: none;">
+            <div id="winMessage">YOU WIN</div>
+            <div id="finalScore"></div>
+            <div id="timeTaken"></div>
+            <button id="replayButton" type="button">Replay</button>
+        </div>
     </div>
 
-    <!-- Control Buttons -->
     <div id="controls">
         <button id="leftButton" type="button">⬅️</button>
         <button id="upButton" type="button">⬆️</button>
         <button id="rightButton" type="button">➡️</button>
     </div>
 
-    <!-- Win Screen Overlay -->
-    <div id="winScreen" style="display: none;">
-        <div id="winMessage">YOU WIN</div>
-        <div id="finalScore"></div>
-        <div id="timeTaken"></div>
-        <button id="replayButton" type="button">Replay</button>
-    </div>
+    
 
     <script src="gamePrototype.js"></script>
 
