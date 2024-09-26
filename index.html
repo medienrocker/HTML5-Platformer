@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HTML5 Platformer Game</title>
     <style>
-        body {
+        #wrapper-szy {
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -22,7 +22,7 @@
 
         #gameCanvas {
             display: block;
-            background: url('./images/Platformer-Background.png') no-repeat center center;
+            background: url('https://medienrocker.com/games/platformer//images/Platformer-Background.png') no-repeat center center;
             background-size: cover;
             border: 2px solid black;
             width: 512px;
@@ -110,8 +110,10 @@
             align-items: center;
             color: white;
             font-size: 24px;
-            width: 512px;  /* Match canvas width */
-            height: 512px; /* Match canvas height */
+            width: 512px;
+            /* Match canvas width */
+            height: 512px;
+            /* Match canvas height */
         }
 
         #replayButton {
@@ -152,45 +154,54 @@
         #controls button:hover {
             background-color: #e8da0e;
         }
+
+        .hidden {
+            display: none;
+        }
     </style>
 </head>
 
 <body>
-    <div id="topBar">
-        <div id="soundToggleContainer">
-            <button id="soundToggleButton" type="button">Sound Off</button>
+    <div class="hidden">
+        <span id="score_field">[[score]]</span>
+        <span id="time_field">[[time]]</span>
+    </div>
+    <div id="wrapper-szy">
+        <div id="topBar">
+            <div id="soundToggleContainer">
+                <button id="soundToggleButton" type="button">Sound Off</button>
+            </div>
+            <div id="scoreTimeContainer">
+                <span id="score">Score: 0</span> / <span id="timer">Time: 0s</span>
+            </div>
+            <div id="logoContainer">
+                <a href="https://bildungssprit.de" target="_blank">
+                    <img src="https://medienrocker.com/games/Platformer/images/bildungssprit_logo.png"
+                        alt="Bildungssprit Logo" id="logo" title="bildungssprit.de">
+                </a>
+            </div>
         </div>
-        <div id="scoreTimeContainer">
-            <span id="score">Score: 0</span> / <span id="timer">Time: 0s</span>
+
+        <div id="gameContainer">
+            <canvas id="gameCanvas" width="512" height="512"></canvas>
+            <div id="overlay">
+                <button id="startButton" type="button">START</button>
+            </div>
+
+            <div id="winScreen" style="display: none;">
+                <div id="winMessage">YOU WIN</div>
+                <div id="finalScore"></div>
+                <div id="timeTaken"></div>
+                <button id="replayButton" type="button">Replay</button>
+            </div>
         </div>
-        <div id="logoContainer">
-            <a href="https://bildungssprit.de" target="_blank">
-                <img src="images/bildungssprit_logo.png" alt="Bildungssprit Logo" id="logo" title="bildungssprit.de">
-            </a>
+
+        <div id="controls">
+            <button id="leftButton" type="button">⬅️</button>
+            <button id="upButton" type="button">⬆️</button>
+            <button id="rightButton" type="button">➡️</button>
         </div>
     </div>
-
-    <div id="gameContainer">
-        <canvas id="gameCanvas" width="512" height="512"></canvas>
-        <div id="overlay">
-            <button id="startButton" type="button">START</button>
-        </div>
-
-        <div id="winScreen" style="display: none;">
-            <div id="winMessage">YOU WIN</div>
-            <div id="finalScore"></div>
-            <div id="timeTaken"></div>
-            <button id="replayButton" type="button">Replay</button>
-        </div>
-    </div>
-
-    <div id="controls">
-        <button id="leftButton" type="button">⬅️</button>
-        <button id="upButton" type="button">⬆️</button>
-        <button id="rightButton" type="button">➡️</button>
-    </div>
-
-    
 
     <script src="gamePrototype.js"></script>
 

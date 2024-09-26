@@ -35,15 +35,15 @@ window.addEventListener('DOMContentLoaded', (event) => {
 
 
     // Audio for jump and landing
-    const jumpSound = new Audio('./audio/jump_sound2.wav');
-    const landingSound = new Audio('./audio/landing_sound.wav');
-    const pickupSound = new Audio('./audio/pickup_sound.wav');
+    const jumpSound = new Audio('https://medienrocker.com/games/platformer//audio/jump_sound2.wav');
+    const landingSound = new Audio('https://medienrocker.com/games/platformer//audio/landing_sound.wav');
+    const pickupSound = new Audio('https://medienrocker.com/games/platformer//audio/pickup_sound.wav');
 
     // Different kinds of pickups
     const pickupImages = {
-        'red': 'images/pickup_red.png',
-        'blue': './images/pickup_blue.png',
-        'star': './images/pickup_star.png',
+        'red': 'https://medienrocker.com/games/platformer/images/pickup_red.png',
+        'blue': 'https://medienrocker.com/games/platformer/images/pickup_blue.png',
+        'star': 'https://medienrocker.com/games/platformer/images/pickup_star.png',
         // Add more types and their corresponding image paths as needed
     }
 
@@ -79,7 +79,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
         height: 32,
         dx: 0,
         dy: 0,
-        speed: 2,
+        speed: 3,
         jumpStrength: 12,
         jumping: false,
         grounded: false,
@@ -134,8 +134,8 @@ window.addEventListener('DOMContentLoaded', (event) => {
     player.image.onload = function () {
         console.log('Player image loaded successfully');
     };
-    player.image.src = './images/character1.png';
-    player.blinkImage.src = './images/character1_blink.png';
+    player.image.src = 'https://medienrocker.com/games/platformer//images/character1.png';
+    player.blinkImage.src = 'https://medienrocker.com/games/platformer//images/character1_blink.png';
 
 
     function loadImage(pickup) {
@@ -146,7 +146,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
         img.onerror = function () {
             console.error(`Failed to load image: ${pickupImages[pickup.type]}`);
             // Fallback to a default image if the specified image fails to load
-            img.src = './images/pickup_default.png';
+            img.src = 'https://medienrocker.com/games/platformer//images/pickup_default.png';
         };
         img.src = pickupImages[pickup.type];
     }
@@ -157,7 +157,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
             loadImage(pickup);
         } else {
             console.warn(`No image defined for pickup type: ${pickup.type}. Using default.`);
-            pickup.image.src = './images/pickup_default.png';
+            pickup.image.src = 'https://medienrocker.com/games/platformer//images/pickup_default.png';
         }
     });
 
